@@ -44,7 +44,7 @@ functions:
 
   # Menú y Catálogo
   listProducts:
-    handler: functions/products/listProducts.handler
+    handler: functions/menu/listProducts.handler
     events:
       - http:
           path: /menu
@@ -52,7 +52,7 @@ functions:
           cors: true
 
   getProductsByCategory:
-    handler: functions/products/getProduct.handler
+    handler: functions/menu/getProductsByCategory.handler
     events:
       - http:
           path: /menu/{category}
