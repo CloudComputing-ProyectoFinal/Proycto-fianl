@@ -1,310 +1,148 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChefHat, Clock } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Database } from '../lib/database.types';
 
-type Order = Database['public']['Tables']['orders']['Row'];
-type OrderItem = Database['public']['Tables']['order_items']['Row'];
-
-interface OrderWithItems extends Order {
-  order_items: OrderItem[];
+interface Order {
+  id: string;
+  order_number: string;
+  status: string;
+  created_at: string;
 }
 
 export function KitchenDashboard() {
-  const { profile } = useAuth();
-  const [orders, setOrders] = useState<OrderWithItems[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [orders] = useState<Order[]>([]);
+  const [loading] = useState(false);
 
-  useEffect(() => {
-    if (profile?.sede_id) {
-      loadOrders();
-      subscribeToOrders();
-    }
-  }, [profile]);
-
-  const loadOrders = async () => {
-    if (!profile?.sede_id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items(*)
-        `)
-        .eq('sede_id', profile.sede_id)
-        .in('status', ['confirmed', 'in_kitchen', 'cooking'])
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setOrders(data as OrderWithItems[]);
-    } catch (error) {
-      console.error('Error loading orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const subscribeToOrders = () => {
-    const channel = supabase
-      .channel('kitchen-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-        },
-        () => {
-          loadOrders();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
+  // TODO: Integrar con GET /kitchen/orders del backend AWS Lambda
   const handleStartCooking = async (orderId: string) => {
-    try {
-      await supabase.rpc('update_order_status', {
-        p_order_id: orderId,
-        p_new_status: 'in_kitchen',
-        p_user_id: profile?.id || '',
-        p_notes: 'Pedido iniciado en cocina',
-      });
-
-      loadOrders();
-    } catch (error) {
-      console.error('Error starting order:', error);
-      alert('Error al iniciar pedido');
-    }
+    // TODO: PUT a /kitchen/orders/{id}/start del backend AWS Lambda
+    console.log('Start cooking order:', orderId);
+    alert('Orden marcada como "En preparación" (demo mode)');
   };
 
-  const handleItemStatusChange = async (
-    itemId: string,
-    newStatus: 'assigned' | 'cooking' | 'ready'
-  ) => {
-    try {
-      const { error } = await supabase
-        .from('order_items')
-        .update({
-          status: newStatus,
-          assigned_cook_id: newStatus === 'assigned' ? profile?.id : undefined,
-        })
-        .eq('id', itemId);
-
-      if (error) throw error;
-
-      const { data: item } = await supabase
-        .from('order_items')
-        .select('order_id')
-        .eq('id', itemId)
-        .single();
-
-      if (item) {
-        const { data: allItems } = await supabase
-          .from('order_items')
-          .select('status')
-          .eq('order_id', item.order_id);
-
-        if (allItems?.every(i => i.status === 'ready')) {
-          await supabase.rpc('update_order_status', {
-            p_order_id: item.order_id,
-            p_new_status: 'packaging',
-            p_user_id: profile?.id || '',
-            p_notes: 'Todos los items listos',
-          });
-        } else if (allItems?.some(i => i.status === 'cooking')) {
-          await supabase.rpc('update_order_status', {
-            p_order_id: item.order_id,
-            p_new_status: 'cooking',
-            p_user_id: profile?.id || '',
-          });
-        }
-      }
-
-      loadOrders();
-    } catch (error) {
-      console.error('Error updating item status:', error);
-      alert('Error al actualizar estado');
-    }
+  const handleMarkReady = async (orderId: string) => {
+    // TODO: PUT a /kitchen/orders/{id}/ready del backend AWS Lambda
+    console.log('Mark order as ready:', orderId);
+    alert('Orden marcada como "Lista" (demo mode)');
   };
+
+  const pendingOrders = orders.filter(o => o.status === 'pending');
+  const cookingOrders = orders.filter(o => o.status === 'cooking');
+  const readyOrders = orders.filter(o => o.status === 'ready');
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando pedidos...</p>
-        </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
 
-  const groupedOrders = orders.reduce((acc, order) => {
-    if (!acc[order.status]) {
-      acc[order.status] = [];
-    }
-    acc[order.status].push(order);
-    return acc;
-  }, {} as Record<string, OrderWithItems[]>);
-
   return (
-    <div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Clock className="text-yellow-600" size={20} />
-            </div>
-            <span>Nuevos Pedidos</span>
-            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm">
-              {groupedOrders.confirmed?.length || 0}
-            </span>
-          </h2>
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">Panel de Cocina</h2>
+          <ChefHat className="text-orange-600" size={32} />
+        </div>
+        <p className="text-gray-600">
+          Bienvenido, <strong>{user?.nombre || 'Cocinero'}</strong>
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Pendientes */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <Clock size={20} className="mr-2 text-yellow-600" />
+            Pendientes ({pendingOrders.length})
+          </h3>
           <div className="space-y-4">
-            {groupedOrders.confirmed?.map((order) => (
-              <div key={order.id} className="border-2 border-yellow-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-gray-900">#{order.order_number}</h3>
-                  <span className="text-xs text-gray-600">
-                    {new Date(order.created_at).toLocaleTimeString('es-PE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-                <div className="space-y-2 mb-3">
-                  {order.order_items.map((item) => (
-                    <div key={item.id} className="text-sm">
-                      <span className="font-medium">{item.quantity}x</span> {item.name}
-                      <span className="text-gray-500 ml-2">({item.station})</span>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => handleStartCooking(order.id)}
-                  className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded-lg font-medium transition-colors"
-                >
-                  Iniciar Preparación
-                </button>
+            {pendingOrders.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 text-center">
+                <p className="text-gray-500">No hay órdenes pendientes</p>
               </div>
-            ))}
+            ) : (
+              pendingOrders.map((order) => (
+                <div key={order.id} className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+                  <h4 className="font-bold text-gray-900">#{order.order_number}</h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {new Date(order.created_at).toLocaleTimeString()}
+                  </p>
+                  <button
+                    onClick={() => handleStartCooking(order.id)}
+                    className="w-full bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700"
+                  >
+                    Iniciar Preparación
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <ChefHat className="text-orange-600" size={20} />
-            </div>
-            <span>En Cocina</span>
-            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm">
-              {groupedOrders.in_kitchen?.length || 0}
-            </span>
-          </h2>
+        {/* En preparación */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <ChefHat size={20} className="mr-2 text-orange-600" />
+            Cocinando ({cookingOrders.length})
+          </h3>
           <div className="space-y-4">
-            {groupedOrders.in_kitchen?.map((order) => (
-              <div key={order.id} className="border-2 border-orange-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-gray-900">#{order.order_number}</h3>
-                  <span className="text-xs text-gray-600">
-                    {new Date(order.created_at).toLocaleTimeString('es-PE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {order.order_items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded"
-                    >
-                      <div>
-                        <span className="font-medium">{item.quantity}x</span> {item.name}
-                        <span className="text-gray-500 ml-2">({item.station})</span>
-                      </div>
-                      <select
-                        value={item.status}
-                        onChange={(e) =>
-                          handleItemStatusChange(
-                            item.id,
-                            e.target.value as 'assigned' | 'cooking' | 'ready'
-                          )
-                        }
-                        className="text-xs border border-gray-300 rounded px-2 py-1"
-                      >
-                        <option value="pending">Pendiente</option>
-                        <option value="assigned">Asignado</option>
-                        <option value="cooking">Cocinando</option>
-                        <option value="ready">Listo</option>
-                      </select>
-                    </div>
-                  ))}
-                </div>
+            {cookingOrders.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 text-center">
+                <p className="text-gray-500">No hay órdenes en preparación</p>
               </div>
-            ))}
+            ) : (
+              cookingOrders.map((order) => (
+                <div key={order.id} className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+                  <h4 className="font-bold text-gray-900">#{order.order_number}</h4>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {new Date(order.created_at).toLocaleTimeString()}
+                  </p>
+                  <button
+                    onClick={() => handleMarkReady(order.id)}
+                    className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700"
+                  >
+                    Marcar como Listo
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <ChefHat className="text-red-600" size={20} />
-            </div>
-            <span>Cocinando</span>
-            <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-sm">
-              {groupedOrders.cooking?.length || 0}
-            </span>
-          </h2>
+        {/* Listos */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <ChefHat size={20} className="mr-2 text-green-600" />
+            Listos ({readyOrders.length})
+          </h3>
           <div className="space-y-4">
-            {groupedOrders.cooking?.map((order) => (
-              <div key={order.id} className="border-2 border-red-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-gray-900">#{order.order_number}</h3>
-                  <span className="text-xs text-gray-600">
-                    {new Date(order.created_at).toLocaleTimeString('es-PE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {order.order_items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded"
-                    >
-                      <div>
-                        <span className="font-medium">{item.quantity}x</span> {item.name}
-                        <span className="text-gray-500 ml-2">({item.station})</span>
-                      </div>
-                      <select
-                        value={item.status}
-                        onChange={(e) =>
-                          handleItemStatusChange(
-                            item.id,
-                            e.target.value as 'assigned' | 'cooking' | 'ready'
-                          )
-                        }
-                        className="text-xs border border-gray-300 rounded px-2 py-1"
-                      >
-                        <option value="pending">Pendiente</option>
-                        <option value="assigned">Asignado</option>
-                        <option value="cooking">Cocinando</option>
-                        <option value="ready">Listo</option>
-                      </select>
-                    </div>
-                  ))}
-                </div>
+            {readyOrders.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 text-center">
+                <p className="text-gray-500">No hay órdenes listas</p>
               </div>
-            ))}
+            ) : (
+              readyOrders.map((order) => (
+                <div key={order.id} className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                  <h4 className="font-bold text-gray-900">#{order.order_number}</h4>
+                  <p className="text-sm text-gray-600">
+                    {new Date(order.created_at).toLocaleTimeString()}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-blue-800 text-sm">
+          <strong>Modo Demo:</strong> Las órdenes se cargarán desde el backend AWS Lambda.
+          Endpoint: <code className="bg-blue-100 px-2 py-1 rounded">GET /kitchen/orders</code>
+        </p>
       </div>
     </div>
   );

@@ -1,131 +1,87 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Database } from '../lib/database.types';
 
-type MenuItem = Database['public']['Tables']['menu_items']['Row'];
-type CartItem = Database['public']['Tables']['cart_items']['Row'];
-
-interface CartItemWithDetails extends CartItem {
-  menu_item: MenuItem;
+interface CartItem {
+  id: string;
+  menu_item_id: string;
+  quantity: number;
+  menu_item: {
+    id: string;
+    name: string;
+    price: number;
+    image_url?: string;
+  };
 }
 
 export function useCart() {
   const { user } = useAuth();
-  const [cartItems, setCartItems] = useState<CartItemWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadCart();
-    } else {
-      setCartItems([]);
-      setLoading(false);
+  const addToCart = async (menuItemId: string, quantity: number = 1) => {
+    if (!user) {
+      alert('Debes iniciar sesión para agregar productos al carrito');
+      return;
     }
-  }, [user]);
-
-  const loadCart = async () => {
-    if (!user) return;
-
+    
     try {
-      const { data, error } = await supabase
-        .from('cart_items')
-        .select(`
-          *,
-          menu_item:menu_items(*)
-        `)
-        .eq('customer_id', user.id);
-
-      if (error) throw error;
-      setCartItems(data as CartItemWithDetails[]);
+      setLoading(true);
+      // TODO: POST a /cart endpoint del backend AWS Lambda
+      console.log('Add to cart:', { menuItemId, quantity, userId: user.id });
+      
+      // Simulación temporal
+      alert('Producto agregado al carrito (demo mode)');
     } catch (error) {
-      console.error('Error loading cart:', error);
+      console.error('Error adding to cart:', error);
+      alert('Error al agregar al carrito');
     } finally {
       setLoading(false);
     }
   };
 
-  const addToCart = async (menuItemId: string, quantity: number = 1) => {
-    if (!user) throw new Error('Must be logged in to add to cart');
-
-    try {
-      const existingItem = cartItems.find(item => item.menu_item_id === menuItemId);
-
-      if (existingItem) {
-        const { error } = await supabase
-          .from('cart_items')
-          .update({ quantity: existingItem.quantity + quantity })
-          .eq('id', existingItem.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('cart_items')
-          .insert({
-            customer_id: user.id,
-            menu_item_id: menuItemId,
-            quantity,
-          });
-
-        if (error) throw error;
-      }
-
-      await loadCart();
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      throw error;
-    }
-  };
-
   const updateQuantity = async (cartItemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      await removeFromCart(cartItemId);
-      return;
-    }
-
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .update({ quantity })
-        .eq('id', cartItemId);
-
-      if (error) throw error;
-      await loadCart();
+      setLoading(true);
+      // TODO: PUT a /cart/{id} endpoint del backend AWS Lambda
+      console.log('Update quantity:', { cartItemId, quantity });
+      
+      setCartItems(items =>
+        items.map(item =>
+          item.id === cartItemId ? { ...item, quantity } : item
+        )
+      );
     } catch (error) {
       console.error('Error updating quantity:', error);
-      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const removeFromCart = async (cartItemId: string) => {
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('id', cartItemId);
-
-      if (error) throw error;
-      await loadCart();
+      setLoading(true);
+      // TODO: DELETE a /cart/{id} endpoint del backend AWS Lambda
+      console.log('Remove from cart:', cartItemId);
+      
+      setCartItems(items => items.filter(item => item.id !== cartItemId));
     } catch (error) {
       console.error('Error removing from cart:', error);
-      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const clearCart = async () => {
-    if (!user) return;
-
     try {
-      const { error } = await supabase
-        .from('cart_items')
-        .delete()
-        .eq('customer_id', user.id);
-
-      if (error) throw error;
+      setLoading(true);
+      // TODO: DELETE a /cart endpoint del backend AWS Lambda
+      console.log('Clear cart');
+      
       setCartItems([]);
     } catch (error) {
       console.error('Error clearing cart:', error);
-      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 

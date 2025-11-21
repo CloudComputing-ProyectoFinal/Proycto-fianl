@@ -1,22 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Filter } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { useCart } from '../hooks/useCart';
-import { useAuth } from '../contexts/AuthContext';
-import { Database } from '../lib/database.types';
 
-type MenuItem = Database['public']['Tables']['menu_items']['Row'];
+interface MenuItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  image_url?: string;
+  available: boolean;
+}
 
 interface MenuPageProps {
   onNavigate: (page: string) => void;
 }
 
 export function MenuPage({ onNavigate }: MenuPageProps) {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [menuItems] = useState<MenuItem[]>([]);
+  const [loading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const { addToCart } = useCart();
-  const { profile } = useAuth();
+  const { addToCart, loading: cartLoading } = useCart();
 
   const categories = [
     { id: 'all', name: 'Todo' },
@@ -27,44 +31,12 @@ export function MenuPage({ onNavigate }: MenuPageProps) {
     { id: 'postres', name: 'Postres' },
   ];
 
-  useEffect(() => {
-    loadMenu();
-  }, []);
-
-  const loadMenu = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('available', true)
-        .order('category', { ascending: true })
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      setMenuItems(data || []);
-    } catch (error) {
-      console.error('Error loading menu:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const filteredItems = selectedCategory === 'all'
     ? menuItems
     : menuItems.filter(item => item.category === selectedCategory);
 
   const handleAddToCart = async (itemId: string) => {
-    if (!profile) {
-      onNavigate('login');
-      return;
-    }
-
-    try {
-      await addToCart(itemId);
-      alert('Producto agregado al carrito');
-    } catch (error) {
-      alert('Error al agregar al carrito');
-    }
+    await addToCart(itemId, 1);
   };
 
   if (loading) {
@@ -136,12 +108,21 @@ export function MenuPage({ onNavigate }: MenuPageProps) {
                   {item.description}
                 </p>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                    {item.preparation_time} min
+                  <span
+                    className={`text-xs px-3 py-1 rounded-full ${
+                      item.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {item.available ? 'Disponible' : 'No disponible'}
                   </span>
                   <button
                     onClick={() => handleAddToCart(item.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                    disabled={!item.available}
+                    className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                      item.available
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
                   >
                     <Plus size={20} />
                     <span>Agregar</span>

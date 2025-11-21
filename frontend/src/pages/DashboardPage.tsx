@@ -10,41 +10,78 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (profile) {
-      if (profile.role === 'admin') {
+      const role = profile.role?.toLowerCase() || '';
+      
+      // Redirigir automáticamente según el rol
+      if (role === 'admin') {
         setActiveTab('admin');
-      } else if (['cheff', 'cocinero', 'digitador'].includes(profile.role)) {
+      } else if (['cheff', 'cocinero', 'digitador', 'cocina'].includes(role)) {
         setActiveTab('kitchen');
-      } else if (['repartidor', 'empacador'].includes(profile.role)) {
+      } else if (['repartidor', 'empacador', 'delivery'].includes(role)) {
         setActiveTab('delivery');
+      } else if (role === 'cliente' || role === 'usuario') {
+        // Clientes no tienen acceso al dashboard, redirigir al menú
+        window.location.href = '/menu';
       }
     }
   }, [profile]);
 
-  if (!profile || profile.role === 'cliente') {
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  const role = profile.role?.toLowerCase() || '';
+  if (role === 'cliente' || role === 'usuario') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Acceso Denegado
           </h2>
-          <p className="text-gray-600">
-            No tienes permisos para acceder al dashboard
+          <p className="text-gray-600 mb-4">
+            Los clientes no tienen acceso al dashboard
           </p>
+          <a href="/menu" className="text-red-600 hover:text-red-700 font-medium">
+            Ir al Menú
+          </a>
         </div>
       </div>
     );
   }
 
+  const getRoleDisplay = () => {
+    const role = profile?.role?.toLowerCase() || '';
+    const roleMap: Record<string, string> = {
+      'admin': 'Administrador',
+      'cheff': 'Chef',
+      'cocinero': 'Cocinero',
+      'digitador': 'Digitador',
+      'repartidor': 'Repartidor',
+      'empacador': 'Empacador',
+    };
+    return roleMap[role] || role;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-black text-white py-8">
         <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-          <p className="text-gray-300">Panel de control - {profile.role}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
+              <p className="text-gray-300">
+                Bienvenido, <strong>{profile?.nombre || 'Usuario'}</strong> - {getRoleDisplay()}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {profile.role === 'admin' && (
+      {role === 'admin' && (
         <div className="container mx-auto px-4 py-6">
           <div className="flex space-x-4 mb-6">
             <button

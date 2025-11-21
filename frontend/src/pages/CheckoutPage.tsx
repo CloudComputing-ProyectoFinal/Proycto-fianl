@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { MapPin, Phone, User, FileText } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 interface CheckoutPageProps {
   onNavigate: (page: string) => void;
@@ -32,56 +31,28 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
     setLoading(true);
 
     try {
-      const { data: orderNumber } = await supabase.rpc('generate_order_number');
+      // TODO: POST a /orders endpoint del backend AWS Lambda
+      const orderData = {
+        customer_id: profile?.id || null,
+        customer_name: formData.name,
+        customer_phone: formData.phone,
+        customer_address: formData.orderType === 'delivery' ? formData.address : null,
+        order_type: formData.orderType,
+        total_amount: total + (formData.orderType === 'delivery' ? 5 : 0),
+        notes: formData.notes || null,
+        items: cartItems.map((item) => ({
+          menu_item_id: item.menu_item_id,
+          name: item.menu_item.name,
+          price: item.menu_item.price,
+          quantity: item.quantity,
+        })),
+      };
 
-      if (!orderNumber) throw new Error('Error generating order number');
-
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          order_number: orderNumber,
-          sede_id: '550e8400-e29b-41d4-a716-446655440000',
-          customer_id: profile?.id || null,
-          customer_name: formData.name,
-          customer_phone: formData.phone,
-          customer_address: formData.orderType === 'delivery' ? formData.address : null,
-          order_type: formData.orderType,
-          status: 'pending',
-          total_amount: total + (formData.orderType === 'delivery' ? 5 : 0),
-          notes: formData.notes || null,
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      const orderItems = cartItems.map((item) => ({
-        order_id: order.id,
-        menu_item_id: item.menu_item_id,
-        name: item.menu_item.name,
-        price: item.menu_item.price,
-        quantity: item.quantity,
-        station: item.menu_item.station,
-        status: 'pending' as const,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) throw itemsError;
-
-      const { error: historyError } = await supabase
-        .from('order_status_history')
-        .insert({
-          order_id: order.id,
-          status: 'pending',
-          changed_by: profile?.id || null,
-          notes: 'Pedido creado',
-        });
-
-      if (historyError) throw historyError;
-
+      console.log('Submit order:', orderData);
+      
+      // Simulación de pedido exitoso
+      alert('¡Pedido realizado con éxito! (demo mode)');
+      
       await clearCart();
 
       alert(`¡Pedido confirmado! Número de orden: ${orderNumber}`);

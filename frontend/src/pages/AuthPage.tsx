@@ -23,21 +23,26 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
     setLoading(true);
 
     try {
+      let result;
       if (isLogin) {
-        const { error } = await signIn(formData.email, formData.password);
-        if (error) throw error;
-        onNavigate('home');
+        result = await signIn({ correo_electronico: formData.email, contraseña: formData.password });
       } else {
-        const { error } = await signUp(
-          formData.email,
-          formData.password,
-          formData.name,
-          formData.phone
-        );
-        if (error) throw error;
-        alert('Cuenta creada exitosamente');
-        onNavigate('home');
+        result = await signUp({
+          nombre: formData.name,
+          correo_electronico: formData.email,
+          contraseña: formData.password,
+          celular: formData.phone,
+          rol: 'cliente',
+        });
       }
+
+      if (result?.error) throw result.error;
+
+      // Redirigir según el rol del usuario
+      // El user se actualiza en el contexto, necesitamos esperar un momento
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 100);
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Error en autenticación');
     } finally {

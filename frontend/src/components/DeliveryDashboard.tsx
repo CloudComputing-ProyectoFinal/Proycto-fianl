@@ -1,309 +1,180 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Package, Truck, CheckCircle, MapPin } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Database } from '../lib/database.types';
 
-type Order = Database['public']['Tables']['orders']['Row'];
-type User = Database['public']['Tables']['users']['Row'];
-
-interface OrderWithDriver extends Order {
-  driver?: User;
+interface Order {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string | null;
+  status: string;
+  total_amount: number;
+  created_at: string;
 }
 
 export function DeliveryDashboard() {
-  const { profile } = useAuth();
-  const [orders, setOrders] = useState<OrderWithDriver[]>([]);
-  const [drivers, setDrivers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [orders] = useState<Order[]>([]);
+  const [loading] = useState(false);
 
-  useEffect(() => {
-    if (profile?.sede_id) {
-      loadOrders();
-      loadDrivers();
-      subscribeToOrders();
-    }
-  }, [profile]);
-
-  const loadOrders = async () => {
-    if (!profile?.sede_id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          driver:users!orders_assigned_driver_id_fkey(*)
-        `)
-        .eq('sede_id', profile.sede_id)
-        .in('status', ['packaging', 'ready', 'on_the_way'])
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setOrders(data as OrderWithDriver[]);
-    } catch (error) {
-      console.error('Error loading orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDrivers = async () => {
-    if (!profile?.sede_id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('sede_id', profile.sede_id)
-        .eq('role', 'repartidor')
-        .eq('active', true);
-
-      if (error) throw error;
-      setDrivers(data || []);
-    } catch (error) {
-      console.error('Error loading drivers:', error);
-    }
-  };
-
-  const subscribeToOrders = () => {
-    const channel = supabase
-      .channel('delivery-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-        },
-        () => {
-          loadOrders();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
+  // TODO: Integrar con GET /delivery/orders del backend AWS Lambda
   const handleMarkReady = async (orderId: string) => {
-    try {
-      await supabase.rpc('update_order_status', {
-        p_order_id: orderId,
-        p_new_status: 'ready',
-        p_user_id: profile?.id || '',
-        p_notes: 'Pedido empaquetado y listo',
-      });
-
-      loadOrders();
-    } catch (error) {
-      console.error('Error marking order ready:', error);
-      alert('Error al marcar pedido listo');
-    }
+    // TODO: PUT a /delivery/orders/{id}/package del backend AWS Lambda
+    console.log('Mark order as packaged:', orderId);
+    alert('Orden marcada como "Empaquetado" (demo mode)');
   };
 
-  const handleAssignDriver = async (orderId: string, driverId: string) => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ assigned_driver_id: driverId })
-        .eq('id', orderId);
-
-      if (error) throw error;
-
-      await supabase.rpc('update_order_status', {
-        p_order_id: orderId,
-        p_new_status: 'on_the_way',
-        p_user_id: profile?.id || '',
-        p_notes: 'Repartidor asignado',
-      });
-
-      loadOrders();
-    } catch (error) {
-      console.error('Error assigning driver:', error);
-      alert('Error al asignar repartidor');
-    }
+  const handleStartDelivery = async (orderId: string) => {
+    // TODO: PUT a /delivery/orders/{id}/dispatch del backend AWS Lambda
+    console.log('Start delivery:', orderId);
+    alert('Orden marcada como "En camino" (demo mode)');
   };
 
   const handleMarkDelivered = async (orderId: string) => {
-    try {
-      await supabase.rpc('update_order_status', {
-        p_order_id: orderId,
-        p_new_status: 'delivered',
-        p_user_id: profile?.id || '',
-        p_notes: 'Pedido entregado al cliente',
-      });
-
-      loadOrders();
-    } catch (error) {
-      console.error('Error marking delivered:', error);
-      alert('Error al marcar como entregado');
-    }
+    // TODO: PUT a /delivery/orders/{id}/deliver del backend AWS Lambda
+    console.log('Mark order as delivered:', orderId);
+    alert('Orden marcada como "Entregado" (demo mode)');
   };
+
+  const readyOrders = orders.filter(o => o.status === 'ready');
+  const onTheWayOrders = orders.filter(o => o.status === 'on_the_way');
+  const packagingOrders = orders.filter(o => o.status === 'packaging');
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando pedidos...</p>
-        </div>
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
 
-  const groupedOrders = orders.reduce((acc, order) => {
-    if (!acc[order.status]) {
-      acc[order.status] = [];
-    }
-    acc[order.status].push(order);
-    return acc;
-  }, {} as Record<string, OrderWithDriver[]>);
-
   return (
-    <div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Package className="text-blue-600" size={20} />
-            </div>
-            <span>Empaquetando</span>
-            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">
-              {groupedOrders.packaging?.length || 0}
-            </span>
-          </h2>
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">Panel de Delivery</h2>
+          <Truck className="text-blue-600" size={32} />
+        </div>
+        <p className="text-gray-600">
+          Bienvenido, <strong>{user?.nombre || 'Repartidor'}</strong>
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Listos para empaquetar */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <Package size={20} className="mr-2 text-green-600" />
+            Listos ({readyOrders.length})
+          </h3>
           <div className="space-y-4">
-            {groupedOrders.packaging?.map((order) => (
-              <div key={order.id} className="border-2 border-blue-200 rounded-lg p-4">
-                <div className="mb-3">
-                  <h3 className="font-bold text-gray-900 mb-1">
-                    #{order.order_number}
-                  </h3>
+            {readyOrders.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 text-center">
+                <p className="text-gray-500">No hay órdenes listas</p>
+              </div>
+            ) : (
+              readyOrders.map((order) => (
+                <div key={order.id} className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                  <h4 className="font-bold text-gray-900">#{order.order_number}</h4>
                   <p className="text-sm text-gray-600">{order.customer_name}</p>
                   <p className="text-sm text-gray-600">{order.customer_phone}</p>
                   {order.customer_address && (
-                    <div className="flex items-start space-x-2 mt-2 text-sm text-gray-600">
-                      <MapPin size={14} className="mt-1 flex-shrink-0" />
-                      <span>{order.customer_address}</span>
+                    <div className="flex items-start space-x-1 mt-2">
+                      <MapPin size={16} className="text-gray-500 mt-0.5" />
+                      <span className="text-xs text-gray-600">{order.customer_address}</span>
                     </div>
                   )}
+                  <button
+                    onClick={() => handleMarkReady(order.id)}
+                    className="w-full mt-3 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700"
+                  >
+                    Empaquetar
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleMarkReady(order.id)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
-                >
-                  Marcar Listo
-                </button>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <CheckCircle className="text-green-600" size={20} />
-            </div>
-            <span>Listos</span>
-            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">
-              {groupedOrders.ready?.length || 0}
-            </span>
-          </h2>
+        {/* Empaquetando */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <Package size={20} className="mr-2 text-blue-600" />
+            Empaquetando ({packagingOrders.length})
+          </h3>
           <div className="space-y-4">
-            {groupedOrders.ready?.map((order) => (
-              <div key={order.id} className="border-2 border-green-200 rounded-lg p-4">
-                <div className="mb-3">
-                  <h3 className="font-bold text-gray-900 mb-1">
-                    #{order.order_number}
-                  </h3>
+            {packagingOrders.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 text-center">
+                <p className="text-gray-500">No hay órdenes empaquetándose</p>
+              </div>
+            ) : (
+              packagingOrders.map((order) => (
+                <div key={order.id} className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                  <h4 className="font-bold text-gray-900">#{order.order_number}</h4>
                   <p className="text-sm text-gray-600">{order.customer_name}</p>
                   <p className="text-sm text-gray-600">{order.customer_phone}</p>
                   {order.customer_address && (
-                    <div className="flex items-start space-x-2 mt-2 text-sm text-gray-600">
-                      <MapPin size={14} className="mt-1 flex-shrink-0" />
-                      <span>{order.customer_address}</span>
+                    <div className="flex items-start space-x-1 mt-2">
+                      <MapPin size={16} className="text-gray-500 mt-0.5" />
+                      <span className="text-xs text-gray-600">{order.customer_address}</span>
                     </div>
                   )}
+                  <button
+                    onClick={() => handleStartDelivery(order.id)}
+                    className="w-full mt-3 bg-orange-600 text-white py-2 rounded-lg font-medium hover:bg-orange-700"
+                  >
+                    Iniciar Entrega
+                  </button>
                 </div>
+              ))
+            )}
+          </div>
+        </div>
 
-                {order.order_type === 'delivery' && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Asignar Repartidor
-                    </label>
-                    <select
-                      onChange={(e) => handleAssignDriver(order.id, e.target.value)}
-                      className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 mb-2"
-                      defaultValue=""
-                    >
-                      <option value="" disabled>
-                        Seleccionar repartidor
-                      </option>
-                      {drivers.map((driver) => (
-                        <option key={driver.id} value={driver.id}>
-                          {driver.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {order.order_type === 'pickup' && (
+        {/* En camino */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <Truck size={20} className="mr-2 text-orange-600" />
+            En Camino ({onTheWayOrders.length})
+          </h3>
+          <div className="space-y-4">
+            {onTheWayOrders.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 text-center">
+                <p className="text-gray-500">No hay órdenes en camino</p>
+              </div>
+            ) : (
+              onTheWayOrders.map((order) => (
+                <div key={order.id} className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4">
+                  <h4 className="font-bold text-gray-900">#{order.order_number}</h4>
+                  <p className="text-sm text-gray-600">{order.customer_name}</p>
+                  <p className="text-sm text-gray-600">{order.customer_phone}</p>
+                  {order.customer_address && (
+                    <div className="flex items-start space-x-1 mt-2">
+                      <MapPin size={16} className="text-gray-500 mt-0.5" />
+                      <span className="text-xs text-gray-600">{order.customer_address}</span>
+                    </div>
+                  )}
                   <button
                     onClick={() => handleMarkDelivered(order.id)}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium transition-colors"
+                    className="w-full mt-3 bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 flex items-center justify-center space-x-2"
                   >
-                    Cliente Recogió
+                    <CheckCircle size={20} />
+                    <span>Marcar Entregado</span>
                   </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Truck className="text-orange-600" size={20} />
-            </div>
-            <span>En Camino</span>
-            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm">
-              {groupedOrders.on_the_way?.length || 0}
-            </span>
-          </h2>
-          <div className="space-y-4">
-            {groupedOrders.on_the_way?.map((order) => (
-              <div key={order.id} className="border-2 border-orange-200 rounded-lg p-4">
-                <div className="mb-3">
-                  <h3 className="font-bold text-gray-900 mb-1">
-                    #{order.order_number}
-                  </h3>
-                  <p className="text-sm text-gray-600">{order.customer_name}</p>
-                  <p className="text-sm text-gray-600">{order.customer_phone}</p>
-                  {order.customer_address && (
-                    <div className="flex items-start space-x-2 mt-2 text-sm text-gray-600">
-                      <MapPin size={14} className="mt-1 flex-shrink-0" />
-                      <span>{order.customer_address}</span>
-                    </div>
-                  )}
-                  {order.driver && (
-                    <div className="mt-2 bg-orange-50 p-2 rounded text-sm">
-                      <span className="font-medium">Repartidor:</span> {order.driver.name}
-                    </div>
-                  )}
                 </div>
-                <button
-                  onClick={() => handleMarkDelivered(order.id)}
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg font-medium transition-colors"
-                >
-                  Marcar Entregado
-                </button>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-blue-800 text-sm">
+          <strong>Modo Demo:</strong> Las órdenes se cargarán desde el backend AWS Lambda.
+          Endpoint: <code className="bg-blue-100 px-2 py-1 rounded">GET /delivery/orders</code>
+        </p>
       </div>
     </div>
   );
