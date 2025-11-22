@@ -1,4 +1,4 @@
-service: fridays-admin-service
+service: joelcayllahua
 
 frameworkVersion: '3'
 
@@ -18,7 +18,7 @@ provider:
   
   # AWS Academy: Usar LabRole existente
   iam:
-    role: arn:aws:iam::139051438271:role/LabRole
+    role: arn:aws:iam::371566897147:role/LabRole
 
 functions:
   authorizer:

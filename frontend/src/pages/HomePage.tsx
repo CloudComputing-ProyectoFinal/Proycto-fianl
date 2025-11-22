@@ -1,10 +1,8 @@
 import { ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-interface HomePageProps {
-  onNavigate: (page: string) => void;
-}
-
-export function HomePage({ onNavigate }: HomePageProps) {
+export function HomePage() {
+  const navigate = useNavigate();
   const categories = [
     {
       id: 'hamburguesas',
@@ -57,7 +55,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
               alitas picantes y papas fritas ilimitadas te esperan.
             </p>
             <button
-              onClick={() => onNavigate('menu')}
+              onClick={() => navigate('/menu')}
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 flex items-center space-x-2"
             >
               <span>Ver Menú Completo</span>
@@ -81,7 +79,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
           {categories.map((category) => (
             <div
               key={category.id}
-              onClick={() => onNavigate('menu')}
+              onClick={() => navigate('/menu')}
               className="group cursor-pointer bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
             >
               <div className="relative h-64 overflow-hidden">
@@ -114,7 +112,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
             Realiza tu pedido ahora y recíbelo en la puerta de tu casa
           </p>
           <button
-            onClick={() => onNavigate('menu')}
+            onClick={() => navigate('/menu')}
             className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105"
           >
             Hacer un Pedido

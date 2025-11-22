@@ -6,17 +6,18 @@ import { MenuPage } from "@/pages/MenuPage";
 import { CartPage } from "@/pages/CartPage";
 import { CheckoutPage } from "@/pages/CheckoutPage";
 import { AuthPage } from "@/pages/AuthPage";
+import { LoginPage } from "@/pages/LoginPage";
+import { RegisterPage } from "@/pages/RegisterPage";
 import { OrderTrackingPage } from "@/pages/OrderTrackingPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { Navbar } from "@/components/Navbar";
 
-// Wrappers para páginas que necesitan onNavigate
+// Wrappers para páginas que necesitan Navbar
 function HomePageWrapper() {
-  const navigate = useNavigate();
   return (
     <>
-      <Navbar currentPage="home" onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
-      <HomePage onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
+      <Navbar currentPage="home" />
+      <HomePage />
     </>
   );
 }
@@ -25,7 +26,7 @@ function MenuPageWrapper() {
   const navigate = useNavigate();
   return (
     <>
-      <Navbar currentPage="menu" onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
+      <Navbar currentPage="menu" />
       <MenuPage onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
     </>
   );
@@ -35,7 +36,7 @@ function CartPageWrapper() {
   const navigate = useNavigate();
   return (
     <>
-      <Navbar currentPage="cart" onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
+      <Navbar currentPage="cart" />
       <CartPage onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
     </>
   );
@@ -45,7 +46,7 @@ function CheckoutPageWrapper() {
   const navigate = useNavigate();
   return (
     <>
-      <Navbar currentPage="checkout" onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
+      <Navbar currentPage="checkout" />
       <CheckoutPage onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
     </>
   );
@@ -57,20 +58,18 @@ function AuthPageWrapper() {
 }
 
 function OrderTrackingPageWrapper() {
-  const navigate = useNavigate();
   return (
     <>
-      <Navbar currentPage="tracking" onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
+      <Navbar currentPage="tracking" />
       <OrderTrackingPage />
     </>
   );
 }
 
 function DashboardPageWrapper() {
-  const navigate = useNavigate();
   return (
     <>
-      <Navbar currentPage="dashboard" onNavigate={(page) => navigate(`/${page === 'home' ? '' : page}`)} />
+      <Navbar currentPage="dashboard" />
       <DashboardPage />
     </>
   );
@@ -94,23 +93,49 @@ const router = createBrowserRouter([
     element: <AuthPageWrapper />,
   },
   {
-    path: "",
+    path: "/auth/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/auth/register",
+    element: <RegisterPage />,
+  },
+  {
+    path: "/cart",
     element: <ProtectedRoute />,
     children: [
       {
-        path: "/cart",
+        index: true,
         element: <CartPageWrapper />,
       },
+    ],
+  },
+  {
+    path: "/checkout",
+    element: <ProtectedRoute />,
+    children: [
       {
-        path: "/checkout",
+        index: true,
         element: <CheckoutPageWrapper />,
       },
+    ],
+  },
+  {
+    path: "/tracking",
+    element: <ProtectedRoute />,
+    children: [
       {
-        path: "/tracking",
+        index: true,
         element: <OrderTrackingPageWrapper />,
       },
+    ],
+  },
+  {
+    path: "/dashboard",
+    element: <ProtectedRoute />,
+    children: [
       {
-        path: "/dashboard",
+        index: true,
         element: <DashboardPageWrapper />,
       },
     ],

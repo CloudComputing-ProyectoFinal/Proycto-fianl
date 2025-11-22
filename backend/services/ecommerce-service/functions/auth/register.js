@@ -17,15 +17,25 @@ async function register(event) {
       };
     }
 
-    // Verificar email existente
-    const existing = await dynamodb.query({
-      TableName: USERS_TABLE,
-      IndexName: 'email-index',
-      KeyConditionExpression: 'email = :email',
-      ExpressionAttributeValues: { ':email': email }
-    }).promise();
+    // Verificar email existente (GSI 'email-index' debe existir)
+    let existing;
+    try {
+      existing = await dynamodb.query({
+        TableName: USERS_TABLE,
+        IndexName: 'email-index',
+        KeyConditionExpression: 'email = :email',
+        ExpressionAttributeValues: { ':email': email }
+      }).promise();
+    } catch (err) {
+      console.error('DynamoDB query error (checking email):', err && err.message ? err.message : err);
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ success: false, error: 'Error al verificar email (ver logs)' })
+      };
+    }
 
-    if (existing.Items.length > 0) {
+    if (existing && existing.Items && existing.Items.length > 0) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
