@@ -1,5 +1,6 @@
 /** Tipos de usuario adaptados a un restaurante */
 import type { Role } from '../api/common';
+export type { Role };
 
 export interface UserProfile {
     id: string;
@@ -19,6 +20,17 @@ export interface UserResponse {
     role: Role;
     nombre: string;
     apellido?: string;
+}
+
+// Tipos auxiliares (vacíos por ahora) — algunos módulos importan estas formas
+export interface DataStudent {
+    // campos específicos de estudiante si aplica
+    [key: string]: any;
+}
+
+export interface DataAuthority {
+    // campos específicos de autoridad/administrador si aplica
+    [key: string]: any;
 }
 
 

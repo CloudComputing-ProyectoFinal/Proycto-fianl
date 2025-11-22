@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Mail, Lock, User, Phone } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Alert from '../ui/Alert';
 
 interface RegisterFormProps {
   onSwitchToLogin?: () => void;
@@ -13,11 +14,14 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     phone: '',
   });
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,21 +29,23 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
 
     try {
       const result = await signUp({
-        nombre: formData.name,
-        correo_electronico: formData.email,
-        contraseña: formData.password,
-        celular: formData.phone,
-        rol: 'cliente',
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        phoneNumber: formData.phone,
+        role: 'USER',
       });
 
       if (result?.error) throw result.error;
 
-      // Redirigir al dashboard después del registro exitoso
+      // Redirigir al dashboard — DashboardPage selecciona vista por rol
       setTimeout(() => {
         navigate('/dashboard');
       }, 100);
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Error en registro');
+      const msg = error instanceof Error ? error.message : 'Error en registro';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -50,14 +56,29 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
       <div>
         <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
           <User size={16} />
-          <span>Nombre Completo</span>
+          <span>Nombre</span>
         </label>
         <input
           type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          value={formData.firstName}
+          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
-          placeholder="Juan Pérez"
+          placeholder="Juan"
+          required
+        />
+      </div>
+
+      <div>
+        <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+          <User size={16} />
+          <span>Apellido</span>
+        </label>
+        <input
+          type="text"
+          value={formData.lastName}
+          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600 focus:border-transparent"
+          placeholder="Pérez"
           required
         />
       </div>
@@ -107,6 +128,18 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
           minLength={6}
         />
       </div>
+
+      {error && (
+        <div>
+          <Alert type="error" title="Error" message={error} onClose={() => setError(null)} />
+        </div>
+      )}
+
+      {success && (
+        <div>
+          <Alert type="success" title="Éxito" message={success} onClose={() => setSuccess(null)} />
+        </div>
+      )}
 
       <button
         type="submit"

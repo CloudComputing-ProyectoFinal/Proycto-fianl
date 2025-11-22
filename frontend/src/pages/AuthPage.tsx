@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { LoginForm } from '../components/forms/LoginForm';
 import { RegisterForm } from '../components/forms/RegisterForm';
 
@@ -9,7 +8,6 @@ interface AuthPageProps {
 
 export function AuthPage({ onNavigate }: AuthPageProps) {
   const [isLogin, setIsLogin] = useState(true);
-  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">

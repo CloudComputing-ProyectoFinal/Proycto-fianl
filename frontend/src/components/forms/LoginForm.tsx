@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Alert from '../ui/Alert';
 
 interface LoginFormProps {
   onSwitchToRegister?: () => void;
@@ -16,25 +17,25 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     email: '',
     password: '',
   });
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const result = await signIn({ 
-        correo_electronico: formData.email, 
-        contraseña: formData.password 
-      });
+      const result = await signIn({ email: formData.email, password: formData.password });
 
       if (result?.error) throw result.error;
 
-      // Redirigir al dashboard después del login exitoso
+      // Redirigir al dashboard basado en el rol del perfil (DashboardPage selecciona vista)
       setTimeout(() => {
         navigate('/dashboard');
       }, 100);
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Error en autenticación');
+      const msg = error instanceof Error ? error.message : 'Error en autenticación';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -72,6 +73,18 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
           minLength={6}
         />
       </div>
+
+      {error && (
+        <div>
+          <Alert type="error" title="Error" message={error} onClose={() => setError(null)} />
+        </div>
+      )}
+
+      {success && (
+        <div>
+          <Alert type="success" title="Éxito" message={success} onClose={() => setSuccess(null)} />
+        </div>
+      )}
 
       <button
         type="submit"

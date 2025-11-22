@@ -9,43 +9,45 @@ import type { Role } from './common';
 // ==================== REGISTER ====================
 
 export interface RegisterRequest {
-  nombre: string;
-  apellido: string;
-  celular: string;
-  correo_electronico: string;
-  //TIPO DE DOCUMENTO{DNI, PASAPORTE, CARNET DE EXTRANJERIA}
-  contraseña: string;
-  rol: Role;
+  firstName: string;
+  lastName?: string;
+  phoneNumber?: string;
+  email: string;
+  // Password plain text
+  password: string;
+  role?: Role | string;
+  address?: string;
 }
 
 export interface RegisterResponse {
-  mensaje: string;
+  message: string;
   token: string;
   user: {
-    id: string;
-    correo_electronico: string;
-    rol: Role | string;
-    nombre: string;
-    apellido: string;
-
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName?: string;
+    role: Role | string;
+    tenantId?: string | null;
   };
 }
 
 // ==================== LOGIN ====================
 
 export interface LoginRequest {
-  correo_electronico: string;
-  contraseña: string;
+  email: string;
+  password: string;
 }
 
 export interface LoginResponse {
   message: string;
   token: string;
   user: {
-    id: string;
-    correo_electronico: string;
-    rol: Role | string;
-    nombre: string;
-    apellido: string;
+    userId: string;
+    email: string;
+    firstName: string;
+    lastName?: string;
+    role: Role | string;
+    tenantId?: string | null;
   };
 }

@@ -35,28 +35,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (data: {
-    nombre: string;
-    apellido?: string;
-    celular?: string;
-    correo_electronico: string;
-    contraseña: string;
-    rol?: string;
+    firstName: string;
+    lastName?: string;
+    phoneNumber?: string;
+    email: string;
+    password: string;
+    role?: string;
+    address?: string;
   }) => {
     try {
       setLoading(true);
       
-      const response = await fetch(`${AUTH_URL}/signup`, {
+      const response = await fetch(`${AUTH_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: data.correo_electronico,
-          password: data.contraseña,
-          nombre: data.nombre,
-          apellido: data.apellido,
-          celular: data.celular,
-          rol: data.rol || 'cliente',
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          phoneNumber: data.phoneNumber,
+          role: data.role || 'USER',
+          address: data.address,
         }),
       });
 
@@ -66,10 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(result.message || 'Error al registrar usuario');
       }
 
-      // Si el registro fue exitoso, hacer login automático
+      // Si el registro fue exitoso, hacer login automático con las credenciales proporcionadas
       return await signIn({
-        correo_electronico: data.correo_electronico,
-        contraseña: data.contraseña,
+        email: data.email,
+        password: data.password,
       });
     } catch (error) {
       console.error('Error signing up:', error);
@@ -80,8 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (credentials: {
-    correo_electronico: string;
-    contraseña: string;
+    email: string;
+    password: string;
   }) => {
     try {
       setLoading(true);
@@ -92,8 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: credentials.correo_electronico,
-          password: credentials.contraseña,
+          email: credentials.email,
+          password: credentials.password,
         }),
       });
 
@@ -108,15 +110,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('auth_token', result.token);
       }
 
+      // Normalizar campos de usuario (aceptar userId/id y firstName/nombre)
+      const userFromServer = result.user || {};
       const userProfile: UserProfile = {
-        id: result.user.id,
-        nombre: result.user.nombre || result.user.name,
-        apellido: result.user.apellido,
-        correo_electronico: result.user.email || result.user.correo_electronico,
-        celular: result.user.celular || result.user.phone,
-        role: result.user.role || result.user.rol || 'USUARIO',
-        activo: result.user.active ?? result.user.activo ?? true,
-        created_at: result.user.created_at || new Date().toISOString(),
+        id: userFromServer.userId || userFromServer.id,
+        nombre: userFromServer.firstName || userFromServer.nombre || userFromServer.name,
+        apellido: userFromServer.lastName || userFromServer.apellido || '',
+        correo_electronico: userFromServer.email || userFromServer.correo_electronico,
+        celular: userFromServer.phoneNumber || userFromServer.celular || userFromServer.phone || '',
+        role: (userFromServer.role || userFromServer.rol || 'USER').toUpperCase(),
+        activo: userFromServer.active ?? userFromServer.activo ?? true,
+        created_at: userFromServer.createdAt || userFromServer.created_at || new Date().toISOString(),
       };
 
       localStorage.setItem('user_profile', JSON.stringify(userProfile));

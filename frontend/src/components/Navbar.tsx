@@ -12,8 +12,8 @@ export function Navbar({ currentPage }: NavbarProps) {
   const { itemCount } = useCart();
   const navigate = useNavigate();
 
-  const profileName = (profile as any)?.name ?? '';
-  const profileRole = String((profile as any)?.role ?? '');
+  const profileName = (profile as any)?.nombre || (profile as any)?.name || (profile as any)?.correo_electronico || '';
+  const profileRole = String(((profile as any)?.role ?? '').toString().toUpperCase());
 
   return (
     <nav className="bg-black text-white shadow-lg sticky top-0 z-50">
@@ -52,7 +52,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                 <span>Menú</span>
               </button>
 
-              {profileRole !== 'cliente' && (
+              {profile && profileRole !== 'USER' && (
                 <button
                   onClick={() => navigate('/dashboard')}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${

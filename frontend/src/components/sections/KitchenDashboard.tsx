@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChefHat, Clock } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Order {
   id: string;

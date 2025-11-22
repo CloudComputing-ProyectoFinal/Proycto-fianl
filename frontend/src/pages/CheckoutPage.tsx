@@ -13,8 +13,8 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    name: profile?.name || '',
-    phone: profile?.phone || '',
+    name: profile?.nombre || '',
+    phone: profile?.celular || '',
     address: '',
     notes: '',
     orderType: 'delivery' as 'delivery' | 'pickup',
@@ -54,8 +54,6 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
       alert('¡Pedido realizado con éxito! (demo mode)');
       
       await clearCart();
-
-      alert(`¡Pedido confirmado! Número de orden: ${orderNumber}`);
       onNavigate('tracking');
     } catch (error) {
       console.error('Error creating order:', error);

@@ -16,11 +16,11 @@ interface MenuPageProps {
   onNavigate: (page: string) => void;
 }
 
-export function MenuPage({ onNavigate }: MenuPageProps) {
+export function MenuPage({ onNavigate: _onNavigate }: MenuPageProps) {
   const [menuItems] = useState<MenuItem[]>([]);
   const [loading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const { addToCart, loading: cartLoading } = useCart();
+  const { addToCart } = useCart();
 
   const categories = [
     { id: 'all', name: 'Todo' },

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { AdminDashboard } from '../components/AdminDashboard';
-import { KitchenDashboard } from '../components/KitchenDashboard';
-import { DeliveryDashboard } from '../components/DeliveryDashboard';
+import { AdminDashboard } from '../components/sections/AdminDashboard';
+import { KitchenDashboard } from '../components/sections/KitchenDashboard';
+import { DeliveryDashboard } from '../components/sections/DeliveryDashboard';
+import { UserDashboard } from '../components/sections/UserDashboard';
 
 export function DashboardPage() {
   const { profile } = useAuth();
@@ -10,18 +11,18 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (profile) {
-      const role = profile.role?.toLowerCase() || '';
+      const role = profile.role?.toUpperCase() || '';
       
       // Redirigir automáticamente según el rol
-      if (role === 'admin') {
+      if (role === 'ADMIN') {
         setActiveTab('admin');
-      } else if (['cheff', 'cocinero', 'digitador', 'cocina'].includes(role)) {
+      } else if (role === 'COOK') {
         setActiveTab('kitchen');
-      } else if (['repartidor', 'empacador', 'delivery'].includes(role)) {
+      } else if (role === 'DISPATCHER') {
         setActiveTab('delivery');
-      } else if (role === 'cliente' || role === 'usuario') {
-        // Clientes no tienen acceso al dashboard, redirigir al menú
-        window.location.href = '/menu';
+      } else if (role === 'USER') {
+        // Mostrar vista de usuario dentro del dashboard
+        setActiveTab('user');
       }
     }
   }, [profile]);
@@ -34,34 +35,18 @@ export function DashboardPage() {
     );
   }
 
-  const role = profile.role?.toLowerCase() || '';
-  if (role === 'cliente' || role === 'usuario') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Acceso Denegado
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Los clientes no tienen acceso al dashboard
-          </p>
-          <a href="/menu" className="text-red-600 hover:text-red-700 font-medium">
-            Ir al Menú
-          </a>
-        </div>
-      </div>
-    );
+  const role = profile.role?.toUpperCase() || '';
+  if (role === 'USER') {
+    return <UserDashboard />;
   }
 
   const getRoleDisplay = () => {
-    const role = profile?.role?.toLowerCase() || '';
+    const role = profile?.role?.toUpperCase() || '';
     const roleMap: Record<string, string> = {
-      'admin': 'Administrador',
-      'cheff': 'Chef',
-      'cocinero': 'Cocinero',
-      'digitador': 'Digitador',
-      'repartidor': 'Repartidor',
-      'empacador': 'Empacador',
+      'ADMIN': 'Administrador',
+      'COOK': 'Cocinero',
+      'DISPATCHER': 'Repartidor',
+      'USER': 'Cliente',
     };
     return roleMap[role] || role;
   };
@@ -81,7 +66,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {role === 'admin' && (
+      {role === 'ADMIN' && (
         <div className="container mx-auto px-4 py-6">
           <div className="flex space-x-4 mb-6">
             <button
@@ -122,6 +107,7 @@ export function DashboardPage() {
         {activeTab === 'admin' && <AdminDashboard />}
         {activeTab === 'kitchen' && <KitchenDashboard />}
         {activeTab === 'delivery' && <DeliveryDashboard />}
+        {activeTab === 'user' && <UserDashboard />}
       </div>
     </div>
   );

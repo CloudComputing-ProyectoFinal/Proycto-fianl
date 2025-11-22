@@ -13,7 +13,7 @@ export function HomePage() {
     {
       id: 'entradas',
       name: 'Entradas',
-      image: 'https://images.pexels.com/photos/12732/chicken-food-eating-9315.jpg',
+      image: 'https://frdadmin21.fridaysperu.com/media/catalog/product/b/a/bacon_cheese_800x800.jpg',
       description: 'Alitas, deditos de pollo y más para compartir',
     },
     {
