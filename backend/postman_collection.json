@@ -1,0 +1,818 @@
+{
+  "info": {
+    "name": "Fridays - Sistema de Órdenes",
+    "description": "Colección de Postman para probar el flujo completo de órdenes con WebSocket y actualizaciones en tiempo real\n\n📋 USUARIOS PRE-CONFIGURADOS (Password: todos123):\n- cliente@fridays.com (USER)\n- chef@fridays.com (COOK)\n- delivery@fridays.com (DISPATCHER)\n- admin@fridays.com (ADMIN)\n\n🔧 CONFIGURACIÓN INICIAL:\n1. Después de 'serverless deploy', actualiza base_url y ws_url con tus endpoints\n2. Ejecuta el script de población: python backend/scripts/seed-data.py --stage dev\n3. Usa el request 'Login - Cliente' o cualquier otro para obtener el token\n4. El token se guarda automáticamente en {{auth_token}}\n\n🌐 WebSocket URL se obtiene del output de 'serverless deploy':\n   ServiceEndpointWebsocket: wss://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/dev",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/dev",
+      "type": "string",
+      "description": "⚠️ Actualiza esto después de 'serverless deploy'. Busca 'ServiceEndpoint' en el output"
+    },
+    {
+      "key": "ws_url",
+      "value": "wss://YOUR_WS_API_ID.execute-api.us-east-1.amazonaws.com/dev",
+      "type": "string",
+      "description": "⚠️ Actualiza esto después de 'serverless deploy'. Busca 'ServiceEndpointWebsocket' en el output"
+    },
+    {
+      "key": "tenant_id",
+      "value": "sede-quito-001",
+      "type": "string",
+      "description": "TenantId de la sede principal (Quito). Creado por el script de seed"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string",
+      "description": "Se auto-completa después de login"
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "string",
+      "description": "Se auto-completa después de crear una orden"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string",
+      "description": "Se auto-completa después de login o registro"
+    },
+    {
+      "key": "product_id",
+      "value": "prod-001",
+      "type": "string",
+      "description": "ProductId de ejemplo (Jack Daniel's Burger). Creado por el script de seed"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Autenticación",
+      "item": [
+        {
+          "name": "Login - Cliente (USER)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.token);",
+                  "    pm.collectionVariables.set('user_id', response.user.userId);",
+                  "    pm.test('Login exitoso - Cliente autenticado', function() {",
+                  "        pm.expect(response.token).to.exist;",
+                  "        pm.expect(response.user.role).to.equal('USER');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente@fridays.com\",\n  \"password\": \"todos123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "👤 Login como cliente\n\nCredenciales:\n- Email: cliente@fridays.com\n- Password: todos123\n- Role: USER\n\nUsa esta cuenta para:\n- Crear órdenes\n- Ver tu menú\n- Recibir notificaciones de tus pedidos"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Chef (COOK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.token);",
+                  "    pm.collectionVariables.set('user_id', response.user.userId);",
+                  "    pm.test('Login exitoso - Chef autenticado', function() {",
+                  "        pm.expect(response.token).to.exist;",
+                  "        pm.expect(response.user.role).to.equal('COOK');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"chef@fridays.com\",\n  \"password\": \"todos123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "👨‍🍳 Login como chef\n\nCredenciales:\n- Email: chef@fridays.com\n- Password: todos123\n- Role: COOK\n- TenantId: sede-quito-001\n\nUsa esta cuenta para:\n- Actualizar estado de órdenes a COOKING, READY\n- Ver todas las órdenes del tenant\n- Recibir notificaciones de nuevas órdenes"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Delivery (DISPATCHER)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.token);",
+                  "    pm.collectionVariables.set('user_id', response.user.userId);",
+                  "    pm.test('Login exitoso - Dispatcher autenticado', function() {",
+                  "        pm.expect(response.token).to.exist;",
+                  "        pm.expect(response.user.role).to.equal('DISPATCHER');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"delivery@fridays.com\",\n  \"password\": \"todos123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "🚗 Login como dispatcher/delivery\n\nCredenciales:\n- Email: delivery@fridays.com\n- Password: todos123\n- Role: DISPATCHER\n- TenantId: sede-quito-001\n\nUsa esta cuenta para:\n- Actualizar estado de órdenes a PACKAGED, ON_THE_WAY, DELIVERED\n- Ver órdenes listas para despacho\n- Recibir notificaciones de órdenes listas"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Admin (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.token);",
+                  "    pm.collectionVariables.set('user_id', response.user.userId);",
+                  "    pm.test('Login exitoso - Admin autenticado', function() {",
+                  "        pm.expect(response.token).to.exist;",
+                  "        pm.expect(response.user.role).to.equal('ADMIN');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@fridays.com\",\n  \"password\": \"todos123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "👔 Login como administrador\n\nCredenciales:\n- Email: admin@fridays.com\n- Password: todos123\n- Role: ADMIN\n- TenantId: sede-quito-001\n\nUsa esta cuenta para:\n- Crear/editar productos del menú\n- Cambiar disponibilidad de productos\n- Ver todas las órdenes y estadísticas\n- Gestionar usuarios y configuración"
+          },
+          "response": []
+        },
+        {
+          "name": "Registro de Usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.token);",
+                  "    pm.collectionVariables.set('user_id', response.user.userId);",
+                  "    pm.test('Usuario registrado y token guardado', function() {",
+                  "        pm.expect(response.token).to.exist;",
+                  "        pm.expect(response.user.userId).to.exist;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente@test.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"Juan\",\n  \"lastName\": \"Pérez\",\n  \"phoneNumber\": \"+51987654321\",\n  \"address\": \"Av. Principal 123, Lima\",\n  \"role\": \"USER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Registra un nuevo usuario en el sistema. Retorna un token JWT.\n\nRoles válidos:\n- USER: Cliente que hace pedidos\n- COOK: Cocinero\n- DISPATCHER: Empaquetador/Repartidor\n- ADMIN: Administrador de sede\n\nPara roles de staff (COOK, DISPATCHER, ADMIN) se debe incluir tenantId en el body."
+          },
+          "response": []
+        },
+        {
+          "name": "Registro de Staff (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.token);",
+                  "    pm.test('Admin registrado exitosamente', function() {",
+                  "        pm.expect(response.user.role).to.equal('ADMIN');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@fridays.com\",\n  \"password\": \"admin123\",\n  \"firstName\": \"Admin\",\n  \"lastName\": \"Fridays\",\n  \"phoneNumber\": \"+51912345678\",\n  \"role\": \"ADMIN\",\n  \"tenantId\": \"{{tenant_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Registra un usuario con rol ADMIN. Requiere tenantId."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('auth_token', response.token);",
+                  "    pm.collectionVariables.set('user_id', response.user.userId);",
+                  "    pm.test('Login exitoso y token guardado', function() {",
+                  "        pm.expect(response.token).to.exist;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevouser@test.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login genérico para usuarios creados manualmente\n\nPara usuarios pre-configurados, usa:\n- 'Login - Cliente (USER)'\n- 'Login - Chef (COOK)'\n- 'Login - Delivery (DISPATCHER)'\n- 'Login - Admin (ADMIN)'"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Productos (Menú)",
+      "item": [
+        {
+          "name": "Listar Menú (Público)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/menu?limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["menu"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "tenantId",
+                  "value": "{{tenant_id}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista todos los productos del menú con paginación. Endpoint público, no requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar por Categoría (Público)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/menu/FOOD",
+              "host": ["{{base_url}}"],
+              "path": ["menu", "FOOD"]
+            },
+            "description": "Lista productos filtrados por categoría. Endpoint público.\n\nCategorías válidas:\n- FOOD: Comida\n- DRINK: Bebidas\n- DESSERT: Postres\n- COMBO: Combos"
+          },
+          "response": []
+        },
+        {
+          "name": "Crear Producto (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('product_id', response.product.productId);",
+                  "    pm.test('Producto creado exitosamente', function() {",
+                  "        pm.expect(response.product.productId).to.exist;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hamburguesa Clásica\",\n  \"description\": \"Hamburguesa con queso, lechuga y tomate\",\n  \"category\": \"FOOD\",\n  \"price\": 18.5,\n  \"currency\": \"PEN\",\n  \"isAvailable\": true,\n  \"preparationTimeMinutes\": 15,\n  \"imageUrl\": \"https://example.com/burger.jpg\",\n  \"tags\": [\"burger\", \"carne\", \"queso\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/menu/productos",
+              "host": ["{{base_url}}"],
+              "path": ["menu", "productos"]
+            },
+            "description": "Crea un nuevo producto en el menú. Requiere rol ADMIN.\n\n🔒 Endpoint protegido - Requiere token JWT"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar Producto (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hamburguesa Clásica Premium\",\n  \"price\": 22.5,\n  \"description\": \"Hamburguesa premium con queso cheddar, lechuga y tomate\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/menu/items/{{product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["menu", "items", "{{product_id}}"]
+            },
+            "description": "Actualiza un producto existente. Requiere rol ADMIN.\n\n🔒 Endpoint protegido - Requiere token JWT"
+          },
+          "response": []
+        },
+        {
+          "name": "Cambiar Disponibilidad (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isAvailable\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/menu/items/{{product_id}}/availability",
+              "host": ["{{base_url}}"],
+              "path": ["menu", "items", "{{product_id}}", "availability"]
+            },
+            "description": "Activa o desactiva la disponibilidad de un producto. Requiere rol ADMIN.\n\n🔒 Endpoint protegido - Requiere token JWT"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Order Workflow",
+      "item": [
+        {
+          "name": "Crear Orden (Step Functions)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Guardar orderId para usar en siguientes requests",
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('order_id', response.orderId);",
+                  "    pm.test('Orden creada exitosamente', function() {",
+                  "        pm.expect(response.orderId).to.exist;",
+                  "        pm.expect(response.status).to.equal('CREATED');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"prod-001\",\n      \"quantity\": 2\n    },\n    {\n      \"productId\": \"prod-005\",\n      \"quantity\": 2\n    }\n  ],\n  \"notes\": \"Sin cebolla en la hamburguesa, por favor\",\n  \"paymentMethod\": \"CARD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": ["{{base_url}}"],
+              "path": ["orders"]
+            },
+            "description": "Crea una nueva orden usando Step Functions. El workflow ejecuta:\n1. PrepareOrderData - Valida y enriquece items\n2. PersistAndBuildOrder - Guarda en DynamoDB\n3. PublishOrderCreatedEvent - Publica evento en EventBridge\n\n🔒 Endpoint protegido - Requiere token JWT (rol USER)\n\n📦 Productos de ejemplo en seed:\n- prod-001: Jack Daniel's Burger ($12.99)\n- prod-002: Costillas BBQ ($18.50)\n- prod-003: Alitas Picantes ($10.99)\n- prod-005: Margarita Clásica ($7.50)\n- prod-006: Limonada Natural ($3.50)\n\nNOTA: El userId y tenantId se extraen automáticamente del JWT token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Update Order Status",
+      "item": [
+        {
+          "name": "Actualizar a COOKING",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Estado actualizado a COOKING', function() {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.newStatus).to.equal('COOKING');",
+                  "    pm.expect(response.previousStatus).to.equal('CREATED');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COOKING\",\n  \"notes\": \"Asignado a estación de parrilla\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{tenant_id}}/{{order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "{{tenant_id}}", "{{order_id}}", "status"]
+            },
+            "description": "El cocinero actualiza el estado de la orden a COOKING. Este endpoint:\n1. Actualiza el estado en DynamoDB\n2. Publica evento ORDER_STATUS_CHANGED en EventBridge\n3. El evento dispara la Lambda broadcast que notifica a usuarios conectados vía WebSocket\n\n🔒 Endpoint protegido - Requiere token JWT con rol COOK, DISPATCHER o ADMIN"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar a READY",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"READY\",\n  \"notes\": \"Listo para empaquetar\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{tenant_id}}/{{order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "{{tenant_id}}", "{{order_id}}", "status"]
+            },
+            "description": "El cocinero marca la orden como lista para empaquetar"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar a PACKAGED",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PACKAGED\",\n  \"notes\": \"Empaquetado y listo para despacho\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{tenant_id}}/{{order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "{{tenant_id}}", "{{order_id}}", "status"]
+            },
+            "description": "El empaquetador marca la orden como empaquetada"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar a ON_THE_WAY",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ON_THE_WAY\",\n  \"notes\": \"En camino al cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{tenant_id}}/{{order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "{{tenant_id}}", "{{order_id}}", "status"]
+            },
+            "description": "El repartidor recoge la orden y la marca como en camino"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar a DELIVERED",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DELIVERED\",\n  \"notes\": \"Entregado al cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{tenant_id}}/{{order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "{{tenant_id}}", "{{order_id}}", "status"]
+            },
+            "description": "El repartidor marca la orden como entregada. Esta es una acción final que marca resolvedAt"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar a CANCELLED",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\",\n  \"notes\": \"Cancelado por solicitud del cliente\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{tenant_id}}/{{order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "{{tenant_id}}", "{{order_id}}", "status"]
+            },
+            "description": "Cancela la orden. Esta es una acción final que marca resolvedAt"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. WebSocket Connection",
+      "item": [
+        {
+          "name": "Conectar WebSocket (Usuario)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ws_url}}?userId={{user_id}}&tenantId={{tenant_id}}&role=USER",
+              "host": ["{{ws_url}}"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "tenantId",
+                  "value": "{{tenant_id}}"
+                },
+                {
+                  "key": "role",
+                  "value": "USER"
+                }
+              ]
+            },
+            "description": "Conecta al WebSocket como usuario cliente.\n\n🌐 URL WebSocket:\nDespués de 'serverless deploy', copia el endpoint:\n  ServiceEndpointWebsocket: wss://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/dev\n\nY actualiza la variable {{ws_url}} en Postman\n\n⚡ Cómo probar WebSocket:\n\n1. En Postman:\n   - New Request → WebSocket\n   - URL: {{ws_url}}?userId={{user_id}}&tenantId={{tenant_id}}&role=USER\n   - Click 'Connect'\n   - Los mensajes llegarán cuando se actualice el estado de una orden\n\n2. Código JavaScript para el frontend:\n\n```javascript\nconst userId = 'user-001'; // Del JWT\nconst tenantId = 'sede-quito-001';\nconst role = 'USER';\n\nconst ws = new WebSocket(\n  `wss://YOUR_WS_ID.execute-api.us-east-1.amazonaws.com/dev?userId=${userId}&tenantId=${tenantId}&role=${role}`\n);\n\nws.onopen = () => console.log('✅ Conectado al WebSocket');\n\nws.onmessage = (event) => {\n  const notification = JSON.parse(event.data);\n  console.log('📬 Nueva notificación:', notification);\n  \n  // Mostrar notificación al usuario\n  if (notification.type === 'ORDER_STATUS_CHANGED') {\n    alert(`${notification.message} - Estado: ${notification.status}`);\n  }\n};\n\nws.onerror = (error) => console.error('❌ Error:', error);\nws.onclose = () => console.log('🔌 Desconectado');\n```\n\nMensajes esperados:\n- ORDER_CREATED: Cuando se crea una orden\n- ORDER_STATUS_CHANGED: Cuando cambia el estado de una orden"
+          },
+          "response": []
+        },
+        {
+          "name": "Conectar WebSocket (Staff)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ws_url}}?userId=cook-001&tenantId={{tenant_id}}&role=COOK",
+              "host": ["{{ws_url}}"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "cook-001"
+                },
+                {
+                  "key": "tenantId",
+                  "value": "{{tenant_id}}"
+                },
+                {
+                  "key": "role",
+                  "value": "COOK"
+                }
+              ]
+            },
+            "description": "Conecta al WebSocket como staff (cocinero, despachador, admin).\n\n👨‍🍳 El staff recibe:\n- Todas las nuevas órdenes del tenant (ORDER_CREATED)\n- Todas las actualizaciones de estado del tenant (ORDER_STATUS_CHANGED)\n\n🔑 UserIds del staff (del seed):\n- cook-001 (chef@fridays.com)\n- cook-002 (chef2@fridays.com)\n- dispatcher-001 (delivery@fridays.com)\n- admin-001 (admin@fridays.com)\n\nRoles válidos: USER, COOK, DISPATCHER, ADMIN"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Ejemplos de Respuestas WebSocket",
+      "item": [
+        {
+          "name": "Ejemplo ORDER_CREATED",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost/example",
+              "protocol": "http",
+              "host": ["localhost"],
+              "path": ["example"]
+            },
+            "description": "Este es un ejemplo del mensaje que recibirás en el WebSocket cuando se crea una orden:\n\n```json\n{\n  \"type\": \"ORDER_CREATED\",\n  \"orderId\": \"uuid-orden\",\n  \"status\": \"CREATED\",\n  \"message\": \"✅ Tu pedido ha sido confirmado\",\n  \"timestamp\": \"2025-11-22T10:30:00Z\",\n  \"data\": {\n    \"orderId\": \"uuid-orden\",\n    \"tenantId\": \"TENANT#001\",\n    \"status\": \"CREATED\",\n    \"total\": 55.5,\n    \"items\": [\n      {\n        \"productId\": \"PRODUCT#001\",\n        \"name\": \"Hamburguesa Clásica\",\n        \"quantity\": 2,\n        \"unitPrice\": 18.5,\n        \"subtotal\": 37.0\n      }\n    ]\n  }\n}\n```"
+          },
+          "response": []
+        },
+        {
+          "name": "Ejemplo ORDER_STATUS_CHANGED",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost/example",
+              "protocol": "http",
+              "host": ["localhost"],
+              "path": ["example"]
+            },
+            "description": "Este es un ejemplo del mensaje que recibirás en el WebSocket cuando cambia el estado:\n\n```json\n{\n  \"type\": \"ORDER_STATUS_CHANGED\",\n  \"orderId\": \"uuid-orden\",\n  \"status\": \"COOKING\",\n  \"message\": \"👨‍🍳 Tu pedido está en preparación\",\n  \"timestamp\": \"2025-11-22T10:35:00Z\",\n  \"data\": {\n    \"orderId\": \"uuid-orden\",\n    \"tenantId\": \"TENANT#001\",\n    \"status\": \"COOKING\",\n    \"previousStatus\": \"CREATED\",\n    \"changedBy\": \"COOK#456\",\n    \"total\": 55.5,\n    \"items\": [...]\n  }\n}\n```\n\nMensajes según el estado:\n- CREATED: ✅ Tu pedido ha sido confirmado\n- COOKING: 👨‍🍳 Tu pedido está en preparación\n- READY: 🔔 Tu pedido está listo\n- PACKAGED: 📦 Tu pedido está siendo empaquetado\n- ON_THE_WAY: 🚗 Tu pedido está en camino\n- DELIVERED: 🎉 ¡Pedido entregado! ¡Disfruta!\n- CANCELLED: ❌ Tu pedido ha sido cancelado"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

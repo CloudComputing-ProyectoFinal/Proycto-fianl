@@ -1,0 +1,28 @@
+{
+  "name": "fridays-backend",
+  "version": "1.0.0",
+  "description": "Backend serverless para sistema de gestión de órdenes Fridays",
+  "main": "serverless.yml",
+  "scripts": {
+    "deploy": "serverless deploy",
+    "deploy:dev": "serverless deploy --stage dev",
+    "deploy:prod": "serverless deploy --stage prod",
+    "remove": "serverless remove",
+    "logs": "serverless logs -f",
+    "invoke": "serverless invoke -f"
+  },
+  "keywords": [
+    "serverless",
+    "aws",
+    "lambda",
+    "websocket",
+    "step-functions"
+  ],
+  "author": "Fridays Peru",
+  "license": "MIT",
+  "devDependencies": {
+    "serverless": "^3.38.0",
+    "serverless-python-requirements": "^6.1.0",
+    "serverless-step-functions": "^3.21.0"
+  }
+}
