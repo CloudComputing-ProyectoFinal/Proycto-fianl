@@ -30,6 +30,7 @@ def handler(event, context):
         items = event.get('items', [])
         notes = event.get('notes', '')
         payment_method = event.get('paymentMethod', 'CASH')
+        delivery_address = event.get('deliveryAddress', '')
         
         # Validaciones básicas
         if not tenant_id:
@@ -74,7 +75,7 @@ def handler(event, context):
                 product = product_response['Item']
                 
                 # Validar disponibilidad
-                if not product.get('isAvailable', False):
+                if not product.get('available', False):
                     raise ValueError(f"Producto {product.get('name', product_id)} no está disponible")
                 
                 # Validar que el producto pertenece al tenant
@@ -89,9 +90,9 @@ def handler(event, context):
                     'productId': product_id,
                     'name': product.get('name', 'Unknown'),
                     'quantity': quantity,
-                    'unitPrice': float(unit_price),
-                    'subtotal': float(item_total),
-                    'preparationTimeMinutes': product.get('preparationTimeMinutes', 15)
+                    'unitPrice': unit_price,  # Mantener como Decimal
+                    'subtotal': item_total,    # Mantener como Decimal
+                    'preparationTimeMinutes': product.get('preparationTime', 15)
                 })
                 
                 total += item_total
@@ -115,7 +116,8 @@ def handler(event, context):
             'items': enriched_items,
             'notes': notes,
             'paymentMethod': payment_method,
-            'total': float(total),
+            'deliveryAddress': delivery_address,
+            'total': total,  # Mantener como Decimal para DynamoDB
             'estimatedPreparationTime': max([item['preparationTimeMinutes'] for item in enriched_items]),
             'preparedAt': datetime.utcnow().isoformat() + 'Z'
         }

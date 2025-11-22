@@ -10,6 +10,7 @@ import os
 import boto3
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
 orders_table = dynamodb.Table(os.environ['ORDERS_TABLE'])
@@ -26,6 +27,18 @@ def handler(event, context):
         order_id = str(uuid.uuid4())
         current_time = datetime.utcnow().isoformat() + 'Z'
         
+        # Asegurar que todos los números son Decimal para DynamoDB
+        items = []
+        for item in event['items']:
+            items.append({
+                'productId': item['productId'],
+                'name': item['name'],
+                'quantity': item['quantity'],
+                'unitPrice': Decimal(str(item['unitPrice'])),
+                'subtotal': Decimal(str(item['subtotal'])),
+                'preparationTimeMinutes': Decimal(str(item['preparationTimeMinutes']))
+            })
+        
         # Construir objeto de orden
         order = {
             'orderId': order_id,
@@ -33,11 +46,12 @@ def handler(event, context):
             'userId': event['userId'],
             'userInfo': event.get('userInfo', {}),
             'status': 'CREATED',
-            'items': event['items'],
+            'items': items,
             'notes': event.get('notes', ''),
             'paymentMethod': event.get('paymentMethod', 'CASH'),
-            'total': event['total'],
-            'estimatedPreparationTime': event.get('estimatedPreparationTime', 15),
+            'deliveryAddress': event.get('deliveryAddress', ''),
+            'total': Decimal(str(event['total'])),
+            'estimatedPreparationTime': Decimal(str(event.get('estimatedPreparationTime', 15))),
             'createdAt': current_time,
             'updatedAt': current_time,
             'timeline': {

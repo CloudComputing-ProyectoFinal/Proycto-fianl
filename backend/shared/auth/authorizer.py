@@ -21,9 +21,14 @@ def handler(event, context):
     try:
         print(f"[Authorizer] Evento recibido: {json.dumps(event)}")
         
-        # Extraer token del header
-        authorization_header = event.get('headers', {}).get('Authorization') or \
-                              event.get('headers', {}).get('authorization')
+        # Extraer token según el tipo de authorizer
+        # TOKEN authorizer: event['authorizationToken']
+        # REQUEST authorizer: event['headers']['Authorization']
+        if event.get('type') == 'TOKEN':
+            authorization_header = event.get('authorizationToken', '')
+        else:
+            authorization_header = event.get('headers', {}).get('Authorization') or \
+                                  event.get('headers', {}).get('authorization')
         
         token = extract_token_from_header(authorization_header)
         
@@ -37,8 +42,15 @@ def handler(event, context):
         
         print(f"[Authorizer] Token válido para usuario {user_id} con rol {role}")
         
-        # Generar policy IAM para permitir acceso
-        policy = generate_policy(user_id, 'Allow', event['methodArn'], {
+        # Generar policy IAM para permitir acceso a todos los endpoints
+        # Convertir el methodArn específico a un wildcard
+        # De: arn:aws:execute-api:region:account:api-id/stage/method/path
+        # A:  arn:aws:execute-api:region:account:api-id/stage/*/*
+        method_arn_parts = event['methodArn'].split('/')
+        base_arn = '/'.join(method_arn_parts[:2])  # arn:aws:.../stage
+        wildcard_arn = f"{base_arn}/*/*"
+        
+        policy = generate_policy(user_id, 'Allow', wildcard_arn, {
             'userId': user_id,
             'email': email,
             'role': role,
@@ -49,8 +61,11 @@ def handler(event, context):
         
     except Exception as e:
         print(f"[Authorizer] Error de autorización: {str(e)}")
-        # Retornar Deny policy
-        return generate_policy('unauthorized', 'Deny', event['methodArn'])
+        # Retornar Deny policy con wildcard
+        method_arn_parts = event['methodArn'].split('/')
+        base_arn = '/'.join(method_arn_parts[:2])
+        wildcard_arn = f"{base_arn}/*/*"
+        return generate_policy('unauthorized', 'Deny', wildcard_arn)
 
 
 def generate_policy(principal_id, effect, resource, context=None):

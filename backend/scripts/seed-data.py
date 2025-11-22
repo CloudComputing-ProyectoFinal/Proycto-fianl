@@ -45,9 +45,11 @@ def seed_users(dynamodb, table_name, tenant_id):
         {
             "userId": "user-001",
             "email": "cliente@fridays.com",
-            "password": hashed_password,
-            "name": "Juan Cliente",
+            "passwordHash": hashed_password,
+            "firstName": "Juan",
+            "lastName": "Cliente",
             "role": "USER",
+            "status": "ACTIVE",
             "phone": "+593987654321",
             "address": "Av. República 123, Quito",
             "createdAt": timestamp,
@@ -56,9 +58,11 @@ def seed_users(dynamodb, table_name, tenant_id):
         {
             "userId": "cook-001",
             "email": "chef@fridays.com",
-            "password": hashed_password,
-            "name": "María Chef",
+            "passwordHash": hashed_password,
+            "firstName": "María",
+            "lastName": "Chef",
             "role": "COOK",
+            "status": "ACTIVE",
             "tenantId": tenant_id,
             "phone": "+593987654322",
             "createdAt": timestamp,
@@ -67,9 +71,11 @@ def seed_users(dynamodb, table_name, tenant_id):
         {
             "userId": "dispatcher-001",
             "email": "delivery@fridays.com",
-            "password": hashed_password,
-            "name": "Carlos Delivery",
+            "passwordHash": hashed_password,
+            "firstName": "Carlos",
+            "lastName": "Delivery",
             "role": "DISPATCHER",
+            "status": "ACTIVE",
             "tenantId": tenant_id,
             "phone": "+593987654323",
             "vehicleType": "MOTORCYCLE",
@@ -80,9 +86,11 @@ def seed_users(dynamodb, table_name, tenant_id):
         {
             "userId": "admin-001",
             "email": "admin@fridays.com",
-            "password": hashed_password,
-            "name": "Ana Admin",
+            "passwordHash": hashed_password,
+            "firstName": "Ana",
+            "lastName": "Admin",
             "role": "ADMIN",
+            "status": "ACTIVE",
             "tenantId": tenant_id,
             "phone": "+593987654324",
             "createdAt": timestamp,
@@ -91,9 +99,11 @@ def seed_users(dynamodb, table_name, tenant_id):
         {
             "userId": "cook-002",
             "email": "chef2@fridays.com",
-            "password": hashed_password,
-            "name": "Pedro Cocinero",
+            "passwordHash": hashed_password,
+            "firstName": "Pedro",
+            "lastName": "Cocinero",
             "role": "COOK",
+            "status": "ACTIVE",
             "tenantId": tenant_id,
             "phone": "+593987654325",
             "createdAt": timestamp,
@@ -108,7 +118,8 @@ def seed_users(dynamodb, table_name, tenant_id):
         try:
             table.put_item(Item=user)
             role_emoji = {"USER": "👤", "COOK": "👨‍🍳", "DISPATCHER": "🚗", "ADMIN": "👔"}
-            print(f"  {role_emoji.get(user['role'], '•')} {user['role']:12} | {user['email']:25} | {user['name']}")
+            full_name = f"{user['firstName']} {user['lastName']}"
+            print(f"  {role_emoji.get(user['role'], '•')} {user['role']:12} | {user['email']:25} | {full_name}")
         except Exception as e:
             print(f"❌ Error insertando {user['email']}: {e}")
     
