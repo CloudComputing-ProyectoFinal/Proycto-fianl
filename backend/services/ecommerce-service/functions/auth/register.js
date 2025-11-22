@@ -28,6 +28,16 @@ async function register(event) {
       }).promise();
     } catch (err) {
       console.error('DynamoDB query error (checking email):', err && err.message ? err.message : err);
+      // Si la tabla o índice no existe, devolver un mensaje claro para el desarrollador
+      if (err && err.code === 'ResourceNotFoundException') {
+        const tableName = USERS_TABLE || `Users-${process.env.STAGE || 'dev'}`;
+        return {
+          statusCode: 500,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ success: false, error: `Recurso no encontrado: tabla o índice ausente (${tableName}). Crear la tabla/índice y desplegar.` })
+        };
+      }
+
       return {
         statusCode: 500,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
