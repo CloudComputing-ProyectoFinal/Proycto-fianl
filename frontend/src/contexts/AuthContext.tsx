@@ -1,123 +1,162 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
-import { Database } from '../lib/database.types';
-
-type UserProfile = Database['public']['Tables']['users']['Row'];
-
-interface AuthContextType {
-  user: User | null;
-  profile: UserProfile | null;
-  session: Session | null;
-  loading: boolean;
-  signUp: (email: string, password: string, name: string, phone?: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-}
+import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import type { AuthContextType } from '../interfaces/context/AuthContext';
+import type { UserProfile } from '../interfaces/user';
+import { loadEnv } from '../utils/loaderEnv';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_URL = loadEnv('AUTH_URL');
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Verificar si hay sesión guardada al cargar
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await loadProfile(session.user.id);
-        } else {
-          setProfile(null);
-          setLoading(false);
+    const checkSession = async () => {
+      const token = localStorage.getItem('auth_token');
+      const savedUser = localStorage.getItem('user_profile');
+      
+      if (token && savedUser) {
+        try {
+          const userProfile = JSON.parse(savedUser);
+          setUser(userProfile);
+          setProfile(userProfile);
+        } catch (error) {
+          console.error('Error parsing saved user:', error);
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_profile');
         }
-      })();
-    });
+      }
+      setLoading(false);
+    };
 
-    return () => subscription.unsubscribe();
+    checkSession();
   }, []);
 
-  const loadProfile = async (userId: string) => {
+  const signUp = async (data: {
+    firstName: string;
+    lastName?: string;
+    phoneNumber?: string;
+    email: string;
+    password: string;
+    role?: string;
+    address?: string;
+  }) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      setLoading(true);
+      
+      const response = await fetch(`${AUTH_URL}/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          phoneNumber: data.phoneNumber,
+          role: data.role || 'USER',
+          address: data.address,
+        }),
+      });
 
-      if (error) throw error;
-      setProfile(data);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Error al registrar usuario');
+      }
+
+      // Si el registro fue exitoso, hacer login automático con las credenciales proporcionadas
+      return await signIn({
+        email: data.email,
+        password: data.password,
+      });
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error('Error signing up:', error);
+      return { error: error as Error };
     } finally {
       setLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, name: string, phone?: string) => {
+  const signIn = async (credentials: {
+    email: string;
+    password: string;
+  }) => {
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
+      setLoading(true);
+      
+      const response = await fetch(`${AUTH_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+        }),
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('No user returned from signup');
+      const result = await response.json();
 
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          email,
-          role: 'cliente',
-          name,
-          phone: phone || null,
-          active: true,
-        });
+      if (!response.ok) {
+        throw new Error(result.message || 'Credenciales inválidas');
+      }
 
-      if (profileError) throw profileError;
+      // Guardar token y perfil
+      if (result.token) {
+        localStorage.setItem('auth_token', result.token);
+      }
 
+      // Normalizar campos de usuario (aceptar userId/id y firstName/nombre)
+      const userFromServer = result.user || {};
+      const userProfile: UserProfile = {
+        id: userFromServer.userId || userFromServer.id,
+        nombre: userFromServer.firstName || userFromServer.nombre || userFromServer.name,
+        apellido: userFromServer.lastName || userFromServer.apellido || '',
+        correo_electronico: userFromServer.email || userFromServer.correo_electronico,
+        celular: userFromServer.phoneNumber || userFromServer.celular || userFromServer.phone || '',
+        role: (userFromServer.role || userFromServer.rol || 'USER').toUpperCase(),
+        activo: userFromServer.active ?? userFromServer.activo ?? true,
+        created_at: userFromServer.createdAt || userFromServer.created_at || new Date().toISOString(),
+      };
+
+      localStorage.setItem('user_profile', JSON.stringify(userProfile));
+      setUser(userProfile);
+      setProfile(userProfile);
+      
       return { error: null };
     } catch (error) {
+      console.error('Error signing in:', error);
       return { error: error as Error };
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      return { error: null };
-    } catch (error) {
-      return { error: error as Error };
+    } finally {
+      setLoading(false);
     }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      setLoading(true);
+      
+      // Limpiar localStorage
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_profile');
+      
+      setUser(null);
+      setProfile(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const value = {
     user,
     profile,
-    session,
+    session: null,
     loading,
     signUp,
     signIn,
