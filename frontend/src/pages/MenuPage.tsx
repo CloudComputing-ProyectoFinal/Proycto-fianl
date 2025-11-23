@@ -51,8 +51,13 @@ export function MenuPage({ onNavigate: _onNavigate }: MenuPageProps) {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const handleAddToCart = async (itemId: string) => {
-    await addToCart(itemId, 1);
+  const handleAddToCart = async (item: any) => {
+    const result = await addToCart(item, 1);
+    if (result?.success) {
+      alert(`✅ ${item.name} agregado al carrito`);
+    } else {
+      alert('❌ Error al agregar al carrito');
+    }
   };
 
   if (loading) {
@@ -126,7 +131,7 @@ export function MenuPage({ onNavigate: _onNavigate }: MenuPageProps) {
                           <p className="text-gray-600 mb-4 text-sm leading-relaxed">{item.description}</p>
                           <div className="flex items-center justify-between">
                             <span className={`text-xs px-3 py-1 rounded-full ${item.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{item.available ? 'Disponible' : 'No disponible'}</span>
-                            <button onClick={() => handleAddToCart(item.id)} disabled={!item.available} className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${item.available ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+                            <button onClick={() => handleAddToCart(item)} disabled={!item.available} className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${item.available ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
                               <Plus size={20} /> <span>Agregar</span>
                             </button>
                           </div>

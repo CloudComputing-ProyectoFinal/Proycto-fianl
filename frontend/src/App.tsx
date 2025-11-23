@@ -1,5 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
+import { WebSocketToast } from './components/WebSocketToast';
+import { useAuth } from './contexts/AuthContext';
 
 /**
  * Layout principal de la aplicación
@@ -7,7 +9,8 @@ import { Navbar } from './components/Navbar';
  */
 export default function App() {
   const location = useLocation();
-  
+  const { profile } = useAuth();
+
   // Obtener la página actual desde la ruta
   const getCurrentPage = () => {
     const path = location.pathname.split('/')[1] || 'home';
@@ -22,6 +25,8 @@ export default function App() {
     <>
       {shouldShowNavbar && <Navbar currentPage={getCurrentPage()} />}
       <Outlet />
+      {/* Toast de notificaciones - solo aparece cuando el usuario está logueado */}
+      {profile && <WebSocketToast />}
     </>
   );
 }

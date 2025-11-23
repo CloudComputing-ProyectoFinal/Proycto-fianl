@@ -2,6 +2,7 @@ import { User, LogOut, MapPin, Phone, ShoppingCart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../hooks/useCart';
 import { useNavigate } from 'react-router-dom';
+import { WebSocketNotifications } from './WebSocketNotifications';
 
 interface NavbarProps {
   currentPage?: string;
@@ -50,6 +51,11 @@ export function Navbar({ currentPage }: NavbarProps) {
                         <div className="text-sm font-medium">{profileName}</div>
                         <div className="text-xs text-gray-500 capitalize">{profileRole}</div>
                       </div>
+                    </div>
+
+                    {/* WebSocket Notifications - solo aparece cuando el usuario está logueado */}
+                    <div className="relative">
+                      <WebSocketNotifications />
                     </div>
 
                     <button onClick={signOut} className="p-2 rounded-lg hover:bg-gray-100" title="Cerrar sesión">

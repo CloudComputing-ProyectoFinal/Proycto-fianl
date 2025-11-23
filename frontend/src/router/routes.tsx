@@ -30,6 +30,10 @@ const router = createBrowserRouter([
         element: <MenuPage onNavigate={() => {}} />,
       },
       {
+        path: "cart",
+        element: <CartPage onNavigate={() => {}} />,
+      },
+      {
         path: "auth",
         element: <AuthPage onNavigate={() => {}} />,
       },
@@ -45,10 +49,6 @@ const router = createBrowserRouter([
         path: "",
         element: <ProtectedRoute />,
         children: [
-          {
-            path: "cart",
-            element: <CartPage onNavigate={() => {}} />,
-          },
           {
             path: "checkout",
             element: <CheckoutPage onNavigate={() => {}} />,
