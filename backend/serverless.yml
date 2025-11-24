@@ -14,7 +14,7 @@ provider:
   # ⚠️ REEMPLAZA 123456789012 CON TU AWS ACCOUNT ID
   # Para obtenerlo: aws sts get-caller-identity --query Account --output text
   iam:
-    role: arn:aws:iam::085989816475:role/LabRole  # 👈 REEMPLAZA CON TU ACCOUNT ID
+    role: arn:aws:iam::458889128053:role/LabRole  # 👈 REEMPLAZA CON TU ACCOUNT ID
   
   layers:
     - Ref: PythonRequirementsLambdaLayer
@@ -194,6 +194,8 @@ functions:
       - eventBridge:
           eventBus: default
           pattern:
+            source:
+              - fridays.orders
             detail-type:
               - ORDER_CREATED
               - ORDER_STATUS_CHANGED
@@ -226,7 +228,7 @@ stepFunctions:
   stateMachines:
     orderWorkflow:
       name: orderWorkflow-${self:provider.stage}
-      role: arn:aws:iam::085989816475:role/LabRole
+      role: arn:aws:iam::458889128053:role/LabRole
       definition:
         Comment: "Order creation workflow"
         StartAt: PrepareOrderData
@@ -428,3 +430,13 @@ resources:
           AttributeName: ttl
           Enabled: true
         BillingMode: PAY_PER_REQUEST
+
+    # Permiso para que EventBridge invoque orderEventsToWS Lambda
+    OrderEventsToWSEventBridgePermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName: !GetAtt OrderEventsToWSLambdaFunction.Arn
+        Action: lambda:InvokeFunction
+        Principal: events.amazonaws.com
+        SourceArn: 
+          Fn::Sub: "arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/fridays-backend-${self:provider.stage}-orderEventsToWS-rule-1"

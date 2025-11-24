@@ -108,6 +108,20 @@ def seed_users(dynamodb, table_name, tenant_id):
             "phone": "+593987654325",
             "createdAt": timestamp,
             "updatedAt": timestamp
+        },
+        {
+            "userId": "user-002",
+            "email": "cliente2@fridays.com",
+            "passwordHash": hashed_password,
+            "firstName": "Laura",
+            "lastName": "Pérez",
+            "role": "USER",
+            "status": "ACTIVE",
+            "tenantId": tenant_id,
+            "phone": "+593987654326",
+            "address": "Av. Amazonas N24-03, Quito",
+            "createdAt": timestamp,
+            "updatedAt": timestamp
         }
     ]
     

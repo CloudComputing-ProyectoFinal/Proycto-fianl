@@ -29,6 +29,12 @@ def handler(event, context):
         tenant_id = query_params.get('tenantId')
         role = query_params.get('role', 'USER')
         
+        # 🔍 DEBUG: Log detallado de query params
+        print(f"[onConnect] 🔍 Query params recibidos: {json.dumps(query_params)}")
+        print(f"[onConnect] 🔍 userId extraído: '{user_id}'")
+        print(f"[onConnect] 🔍 tenantId extraído: '{tenant_id}'")
+        print(f"[onConnect] 🔍 role extraído: '{role}'")
+        
         # Validaciones
         if not user_id:
             print(f"[onConnect] Error: userId no proporcionado")
@@ -60,7 +66,9 @@ def handler(event, context):
         
         ws_connections_table.put_item(Item=connection_item)
         
-        print(f"[onConnect] Conexión registrada: {connection_id} para usuario {user_id}")
+        # 🔍 DEBUG: Confirmar datos guardados
+        print(f"[onConnect] ✅ Conexión registrada: {connection_id} para usuario {user_id}")
+        print(f"[onConnect] 🔍 Item guardado en DynamoDB: {json.dumps(connection_item, default=str)}")
         
         return {
             'statusCode': 200,
