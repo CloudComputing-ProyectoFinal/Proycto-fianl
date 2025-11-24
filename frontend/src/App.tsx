@@ -1,66 +1,32 @@
-import { useState } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
-import { HomePage } from './pages/HomePage';
-import { MenuPage } from './pages/MenuPage';
-import { CartPage } from './pages/CartPage';
-import { CheckoutPage } from './pages/CheckoutPage';
-import { AuthPage } from './pages/AuthPage';
-import { OrderTrackingPage } from './pages/OrderTrackingPage';
-import { DashboardPage } from './pages/DashboardPage';
+import { WebSocketToast } from './components/WebSocketToast';
+import { useAuth } from './contexts/AuthContext';
 
-function AppContent() {
-  const [currentPage, setCurrentPage] = useState('home');
-  const { loading } = useAuth();
+/**
+ * Layout principal de la aplicación
+ * Contiene el Navbar y el contenido de las rutas hijas vía Outlet
+ */
+export default function App() {
+  const location = useLocation();
+  const { profile } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <HomePage onNavigate={setCurrentPage} />;
-      case 'menu':
-        return <MenuPage onNavigate={setCurrentPage} />;
-      case 'cart':
-        return <CartPage onNavigate={setCurrentPage} />;
-      case 'checkout':
-        return <CheckoutPage onNavigate={setCurrentPage} />;
-      case 'login':
-        return <AuthPage onNavigate={setCurrentPage} />;
-      case 'tracking':
-        return <OrderTrackingPage />;
-      case 'dashboard':
-        return <DashboardPage />;
-      default:
-        return <HomePage onNavigate={setCurrentPage} />;
-    }
+  // Obtener la página actual desde la ruta
+  const getCurrentPage = () => {
+    const path = location.pathname.split('/')[1] || 'home';
+    return path;
   };
 
+  // Rutas que no deben mostrar el Navbar
+  const hideNavbarRoutes = ['/auth', '/auth/login', '/auth/register'];
+  const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {currentPage !== 'login' && (
-        <Navbar currentPage={currentPage} onNavigate={setCurrentPage} />
-      )}
-      {renderPage()}
-    </div>
+    <>
+      {shouldShowNavbar && <Navbar currentPage={getCurrentPage()} />}
+      <Outlet />
+      {/* Toast de notificaciones - solo aparece cuando el usuario está logueado */}
+      {profile && <WebSocketToast />}
+    </>
   );
 }
-
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
-}
-
-export default App;

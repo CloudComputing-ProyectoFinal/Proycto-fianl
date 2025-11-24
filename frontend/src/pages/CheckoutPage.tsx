@@ -1,21 +1,30 @@
 import { useState } from 'react';
 import { MapPin, Phone, User, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 interface CheckoutPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
 export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
+  const navigate = useNavigate();
   const { cartItems, total, clearCart } = useCart();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
 
+  const handleNavigate = (path: string) => {
+    if (onNavigate) {
+      onNavigate(path);
+    } else {
+      navigate(`/${path}`);
+    }
+  };
+
   const [formData, setFormData] = useState({
-    name: profile?.name || '',
-    phone: profile?.phone || '',
+    name: profile?.nombre || '',
+    phone: profile?.celular || '',
     address: '',
     notes: '',
     orderType: 'delivery' as 'delivery' | 'pickup',
@@ -29,73 +38,65 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
       return;
     }
 
+    if (!profile) {
+      alert('Debes iniciar sesión para realizar un pedido');
+      handleNavigate('auth/login');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { data: orderNumber } = await supabase.rpc('generate_order_number');
+      const token = localStorage.getItem('auth_token');
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-      if (!orderNumber) throw new Error('Error generating order number');
+      // Preparar datos según formato del backend
+      const orderData = {
+        items: cartItems.map((item) => ({
+          productId: item.menu_item_id,
+          quantity: item.quantity,
+          notes: '',
+        })),
+        notes: formData.notes || '',
+        paymentMethod: 'CARD',
+        deliveryAddress: formData.orderType === 'delivery' ? formData.address : '',
+      };
 
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          order_number: orderNumber,
-          sede_id: '550e8400-e29b-41d4-a716-446655440000',
-          customer_id: profile?.id || null,
-          customer_name: formData.name,
-          customer_phone: formData.phone,
-          customer_address: formData.orderType === 'delivery' ? formData.address : null,
-          order_type: formData.orderType,
-          status: 'pending',
-          total_amount: total + (formData.orderType === 'delivery' ? 5 : 0),
-          notes: formData.notes || null,
-        })
-        .select()
-        .single();
+      const response = await fetch(`${API_BASE_URL}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderData),
+      });
 
-      if (orderError) throw orderError;
+      const result = await response.json();
 
-      const orderItems = cartItems.map((item) => ({
-        order_id: order.id,
-        menu_item_id: item.menu_item_id,
-        name: item.menu_item.name,
-        price: item.menu_item.price,
-        quantity: item.quantity,
-        station: item.menu_item.station,
-        status: 'pending' as const,
-      }));
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Error al crear la orden');
+      }
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
+      // Orden creada exitosamente
+      const orderIdShort = result.orderId ? result.orderId.substring(0, 8) : 'N/A';
+      const totalAmount = result.total ? `$${result.total.toFixed(2)}` : 'N/A';
+      const orderStatus = result.status || 'CREATED';
 
-      if (itemsError) throw itemsError;
-
-      const { error: historyError } = await supabase
-        .from('order_status_history')
-        .insert({
-          order_id: order.id,
-          status: 'pending',
-          changed_by: profile?.id || null,
-          notes: 'Pedido creado',
-        });
-
-      if (historyError) throw historyError;
+      alert(`¡Pedido creado con éxito!\n\nID: #${orderIdShort}\nTotal: ${totalAmount}\nEstado: ${orderStatus}`);
 
       await clearCart();
-
-      alert(`¡Pedido confirmado! Número de orden: ${orderNumber}`);
-      onNavigate('tracking');
+      handleNavigate('');
     } catch (error) {
       console.error('Error creating order:', error);
-      alert('Error al crear el pedido. Por favor intenta de nuevo.');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      alert(`Error al crear el pedido:\n${errorMessage}\n\nPor favor intenta de nuevo.`);
     } finally {
       setLoading(false);
     }
   };
 
   if (cartItems.length === 0) {
-    onNavigate('cart');
+    handleNavigate('cart');
     return null;
   }
 

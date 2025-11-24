@@ -1,12 +1,18 @@
 import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../hooks/useCart';
 
 interface CartPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
 export function CartPage({ onNavigate }: CartPageProps) {
+  const navigate = useNavigate();
   const { cartItems, loading, updateQuantity, removeFromCart, total } = useCart();
+
+  const handleNavigate = (path: string) => {
+    navigate(`/${path}`);
+  };
 
   if (loading) {
     return (
@@ -32,7 +38,7 @@ export function CartPage({ onNavigate }: CartPageProps) {
               Agrega productos del menú para comenzar tu pedido
             </p>
             <button
-              onClick={() => onNavigate('menu')}
+              onClick={() => handleNavigate('menu')}
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
             >
               Ver Menú
@@ -137,14 +143,14 @@ export function CartPage({ onNavigate }: CartPageProps) {
               </div>
 
               <button
-                onClick={() => onNavigate('checkout')}
+                onClick={() => handleNavigate('checkout')}
                 className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-lg font-semibold text-lg transition-colors"
               >
                 Proceder al Pago
               </button>
 
               <button
-                onClick={() => onNavigate('menu')}
+                onClick={() => handleNavigate('menu')}
                 className="w-full mt-3 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg font-medium transition-colors"
               >
                 Seguir Comprando

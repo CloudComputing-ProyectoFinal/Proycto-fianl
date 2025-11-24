@@ -1,71 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Package, Clock, ChefHat, Box, Truck, CheckCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { Database } from '../lib/database.types';
 
-type Order = Database['public']['Tables']['orders']['Row'];
-type OrderItem = Database['public']['Tables']['order_items']['Row'];
+interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+}
 
-interface OrderWithItems extends Order {
+interface Order {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string | null;
+  order_type: string;
+  status: string;
+  total_amount: number;
+  created_at: string;
   order_items: OrderItem[];
 }
 
 export function OrderTrackingPage() {
-  const { profile } = useAuth();
-  const [orders, setOrders] = useState<OrderWithItems[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (profile) {
-      loadOrders();
-      subscribeToOrders();
-    }
-  }, [profile]);
-
-  const loadOrders = async () => {
-    if (!profile) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items(*)
-        `)
-        .eq('customer_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setOrders(data as OrderWithItems[]);
-    } catch (error) {
-      console.error('Error loading orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const subscribeToOrders = () => {
-    const channel = supabase
-      .channel('order-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-        },
-        () => {
-          loadOrders();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
+  const [orders] = useState<Order[]>([]);
+  const [loading] = useState(false);
 
   const getStatusInfo = (status: string) => {
     switch (status) {
