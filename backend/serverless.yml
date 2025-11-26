@@ -1,4 +1,4 @@
-org: leonardogst  # 👈 REEMPLAZA CON TU ORGANIZACIÓN
+org: joelcayllahua  # 👈 REEMPLAZA CON TU ORGANIZACIÓN
 service: fridays-backend
 
 frameworkVersion: '4'
@@ -14,7 +14,7 @@ provider:
   # ⚠️ REEMPLAZA 123456789012 CON TU AWS ACCOUNT ID
   # Para obtenerlo: aws sts get-caller-identity --query Account --output text
   iam:
-    role: arn:aws:iam::292984540358:role/LabRole  # 👈 REEMPLAZA CON TU ACCOUNT ID
+    role: arn:aws:iam::371566897147:role/LabRole  # 👈 REEMPLAZA CON TU ACCOUNT ID
   
   layers:
     - Ref: PythonRequirementsLambdaLayer
@@ -38,7 +38,7 @@ custom:
     dockerizePip: false
     slim: true
     strip: false
-    pythonBin: python3
+    pythonBin: python
     layer: true
 
 functions:
@@ -249,7 +249,7 @@ stepFunctions:
   stateMachines:
     orderWorkflow:
       name: orderWorkflow-${self:provider.stage}
-      role: arn:aws:iam::292984540358:role/LabRole
+      role: arn:aws:iam::371566897147:role/LabRole
       definition:
         Comment: "Order creation workflow"
         StartAt: PrepareOrderData
