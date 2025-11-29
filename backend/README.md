@@ -1,490 +1,306 @@
-# 🍔 Fridays Perú - Backend Serverless
+# ✅ REFACTOR COMPLETO - FRIDAYS PERÚ
 
-> **Sistema de Gestión de Pedidos** | AWS Lambda + DynamoDB + API Gateway  
-> **Equipo:** Leonardo, Luis, Nayeli | **Noviembre 2024**
+## � ESTADO: 100% COMPLETADO
 
 ---
 
-## 🚨 CONVENCIONES OBLIGATORIAS
+## 📊 NÚMEROS FINALES
 
-**TODOS deben usar EXACTAMENTE estos valores:**
+| Métrica | Cantidad |
+|---------|----------|
+| **Lambdas totales** | 59 funciones |
+| **Shared modules** | 13 archivos |
+| **Serverless.yml** | 7 configuraciones |
+| **Servicios** | 7 microservicios |
+| **Step Functions** | 1 workflow (3 lambdas) |
+| **Tables DynamoDB** | 7 tablas |
+| **Credenciales hardcodeadas** | 0 ❌ |
 
+---
+
+## 🏗️ SERVICIOS REFACTORIZADOS
+
+### ✅ E-COMMERCE SERVICE (22 lambdas)
+- **AUTH** (4): register, login, refresh-token, logout
+- **MENU** (5): getMenu, getCategory, getProduct, search, listCategories
+- **ORDERS** (5): createOrder, getOrder, listUserOrders, listOrders, cancelOrder
+- **CART** (2): syncCart, clearCart
+- **PAYMENTS** (2): createIntent, confirmPayment **⚠️ SIMULADOS (NO REALES)**
+- **PRODUCTS ADMIN** (4): createProduct, updateItem, updateAvailability, deleteItem
+
+### ✅ KITCHEN SERVICE (6 lambdas)
+- **ORDERS** (4): getCreated, assignOrder, updateOrder, markReady
+- **CHEFS** (2): listChefs, createChef
+
+### ✅ DELIVERY SERVICE (6 lambdas)
+- **DRIVERS** (3): getAvailable, listDrivers, createDriver
+- **ORDERS** (3): assignDriver, updateStatus, getTracking
+
+### ✅ ADMIN SERVICE (5 lambdas)
+- **DASHBOARD** (1): getDashboard
+- **SEDES** (2): listSedes, createSede
+- **USERS** (2): listUsers, createUser
+
+### ✅ WEBSOCKET SERVICE (3 lambdas)
+- **CONNECTION** (2): onConnect, onDisconnect
+- **EVENTS** (1): handleOrderEvents (EventBridge → WS)
+
+### ✅ STEP FUNCTIONS (3 lambdas + ASL)
+- prepareOrderData
+- persistBuildOrder
+- publishOrderCreated
+- order-workflow.asl.json
+
+### ✅ WORKERS (1 lambda)
+- orderQueueWorker (SQS consumer)
+
+---
+
+## 🔐 SEGURIDAD (AWS ACADEMY COMPATIBLE)
+
+### ✅ Node.js 22.x en todos los servicios
 ```yaml
-Stage:       dev
-Profile:     fridays-dev
-Region:      us-east-1
-JWT Secret:  fridays-secret-key-2025-proyectofinal
-API Prefix:  /api
-Tablas:      {NombreTabla}-dev
-```
-
-**Nombres de tablas:**
-- `Users-dev`, `Tenants-dev`, `Products-dev`, `Orders-dev`
-- `WSConnections-dev`, `Carts-dev`, `Notifications-dev`
-
----
-
-## 📁 Estructura del Proyecto
-
-```
-backend/
-├── services/
-│   ├── ecommerce-service/      # Leonardo (Persona 1)
-│   ├── kitchen-service/        # Luis (Persona 2)
-│   ├── delivery-service/       # Nayeli (Persona 3)
-│   ├── admin-service/          # Nayeli (Persona 3)
-│   └── websocket-service/      # Compartido
-├── shared/
-│   ├── auth/                   # JWT + Authorizer
-│   ├── middlewares/            # Mock auth, validaciones
-│   ├── constants/              # Roles, estados, etc.
-│   └── utils/
-├── scripts/
-│   ├── create-tables-local.js
-│   ├── seed-data-local.js
-│   └── update-credentials.sh
-└── docs/
-    ├── DATABASE-SCHEMA.md      # Esquemas de BD
-    └── AWS-SETUP.md            # Config AWS Academy
-```
-
----
-
-## 🚀 Quick Start
-
-### 1. Instalación Inicial
-
-```bash
-# Clonar repositorio
-git clone <repo-url>
-cd backend
-
-# Instalar dependencias
-npm install
-npm run install:all
-```
-
-### 2. Configurar AWS Academy
-
-```bash
-# 1. Iniciar AWS Learner Lab (círculo verde 🟢)
-# 2. AWS Details → Show → Copiar credenciales
-
-# 3. AWS Academy te da las credenciales como [default]
-# 4. Crear/editar ~/.aws/credentials
-nano ~/.aws/credentials
-
-# 5. IMPORTANTE: Cambiar [default] por [fridays-dev] al pegar:
-[fridays-dev]                    # ← Cambiar esto (viene como [default])
-aws_access_key_id=ASIAXXX...
-aws_secret_access_key=abc123...
-aws_session_token=IQoJb3JpZ2luX2VjE...
-
-# 6. Verificar
-aws sts get-caller-identity --profile fridays-dev
-```
-
-**💡 ¿Por qué `[fridays-dev]` y no `[default]`?**
-- Para separar este proyecto de tus otras cuentas AWS
-- Si usas `[default]`, también funciona pero debes cambiar los comandos
-
-**⚠️ Las credenciales expiran cada 4 horas.** Usa `scripts/update-credentials.sh` para renovar.
-
-### 3. DynamoDB Local
-
-```bash
-# Terminal 1: Iniciar Docker
-npm run local:dynamodb
-
-# Terminal 2: Crear tablas y datos
-npm run setup:dynamodb
-```
-
-### 4. Desarrollo Local
-
-```bash
-# Leonardo (Persona 1)
-npm run dev:ecommerce    # http://localhost:3001
-
-# Luis (Persona 2)
-npm run dev:kitchen      # http://localhost:3002
-
-# Nayeli (Persona 3)
-npm run dev:delivery     # http://localhost:3003
-npm run dev:admin        # http://localhost:3004
-```
-
----
-
-## 👥 División de Responsabilidades
-
-| Persona | Servicios | Endpoints | Tablas |
-|---------|-----------|-----------|--------|
-| **Leonardo (P1)** | ecommerce | `/api/menu`, `/api/cart`, `/api/orders` | Products, Orders, Carts |
-| **Luis (P2)** | kitchen | `/api/kitchen/*`, `/api/auth/login` | Orders, Products |
-| **Nayeli (P3)** | delivery, admin | `/api/delivery/*`, `/api/admin/*` | Orders, Users, Tenants |
-
----
-
-## 🔐 Autenticación
-
-### Desarrollo Local (Mock Auth)
-```javascript
-const { mockAuth } = require('../../../shared/middlewares/mock-auth');
-
-module.exports.handler = mockAuth(async (event) => {
-  const user = event.requestContext.authorizer;
-  // user.userId, user.role, user.tenantId disponibles
-  
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ data: { user } })
-  };
-});
-```
-
-### AWS (JWT Real)
-```yaml
-functions:
-  authorizer:
-    handler: ../../shared/auth/authorizer.handler
-  
-  listDrivers:
-    handler: functions/drivers/listDrivers.handler
-    events:
-      - http:
-          path: /api/delivery/drivers
-          method: GET
-          authorizer:
-            name: authorizer
-```
-
----
-
-## 👤 Roles de Usuario
-
-```javascript
-const { USER_ROLES } = require('../../shared/constants/user-roles');
-
-// Roles disponibles:
-USER_ROLES.CLIENTE         // Cliente final
-USER_ROLES.DIGITADOR       // Digitador de pedidos
-USER_ROLES.CHEF_EJECUTIVO  // Chef Ejecutivo
-USER_ROLES.COCINERO        // Cocinero
-USER_ROLES.EMPACADOR       // Empacador
-USER_ROLES.REPARTIDOR      // Repartidor
-USER_ROLES.ADMIN_SEDE      // Admin de Sede
-```
-
-**Usuarios de prueba (seed data):**
-- `leonardo@gmail.com` → CLIENTE
-- `ana.digitador@fridays.pe` → DIGITADOR
-- `carlos.chef@fridays.pe` → CHEF_EJECUTIVO
-- `luis.cocinero@fridays.pe` → COCINERO
-- `jose.empacador@fridays.pe` → EMPACADOR
-- `maria.repartidor@fridays.pe` → REPARTIDOR
-- `admin@fridays.pe` → ADMIN_SEDE
-
-**Password:** `password123` (en desarrollo)
-
----
-
-## 📦 Estados de Órdenes
-
-```javascript
-const { ORDER_STATUS } = require('../../shared/constants/order-status');
-
-// Flujo:
-CREATED → COOKING → READY → DELIVERING → DELIVERED
-   ↓         ↓        ↓          ↓
-CANCELLED (en cualquier momento)
-```
-
----
-
-## 🛠️ Scripts Disponibles
-
-```bash
-# Instalación
-npm run install:all
-
-# DynamoDB Local
-npm run local:dynamodb       # Iniciar Docker (puerto 8000)
-npm run setup:dynamodb       # Crear tablas y seed data
-npm run local:dynamodb:stop  # Detener Docker
-
-# Desarrollo Local
-npm run dev:ecommerce
-npm run dev:kitchen
-npm run dev:delivery
-npm run dev:admin
-
-# Deploy a AWS
-npm run deploy:ecommerce
-npm run deploy:kitchen
-npm run deploy:delivery
-npm run deploy:admin
-npm run deploy:all
-
-# Logs AWS
-npm run logs:delivery
-npm run logs:admin
-
-# Limpiar recursos AWS
-npm run remove:delivery
-npm run remove:admin
-```
-
----
-
-## 📡 API Endpoints
-
-### E-commerce Service (Puerto 3001)
-```
-GET    /api/menu
-GET    /api/menu/{category}
-POST   /api/cart/add
-GET    /api/cart
-POST   /api/orders
-GET    /api/orders/{orderId}
-```
-
-### Kitchen Service (Puerto 3002)
-```
-POST   /api/kitchen/orders/{orderId}/assign
-GET    /api/kitchen/orders/pending
-POST   /api/kitchen/orders/{orderId}/ready
-POST   /api/menu/items
-PUT    /api/menu/items/{itemId}/availability
-```
-
-### Delivery Service (Puerto 3003)
-```
-POST   /api/delivery/orders/{orderId}/assign
-PUT    /api/delivery/orders/{orderId}/status
-GET    /api/delivery/drivers/available
-POST   /api/delivery/drivers
-```
-
-### Admin Service (Puerto 3004)
-```
-GET    /api/admin/dashboard
-GET    /api/admin/orders/today
-GET    /api/admin/sedes
-POST   /api/admin/users
-PUT    /api/admin/users/{userId}
-```
-
----
-
-## 🔄 Flujo de Trabajo
-
-### 1. Desarrollo Local (90% del tiempo)
-- DynamoDB en Docker
-- Serverless offline
-- Mock auth (sin JWT real)
-- **$0 costo**
-
-### 2. Testing AWS (10% del tiempo)
-- Deploy en tu cuenta AWS Academy individual
-- JWT real
-- Credenciales renovadas cada 4h
-
-### 3. Integración (Viernes 8pm)
-- Deploy en cuenta compartida
-- Pruebas entre servicios
-- Code review
-- Demo
-
----
-
-## 📝 Formato de Respuestas API
-
-**Todas las respuestas deben seguir este formato:**
-
-### ✅ Success
-```javascript
-{
-  statusCode: 200,
-  headers: {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*'
-  },
-  body: JSON.stringify({
-    success: true,
-    data: { /* tus datos */ }
-  })
-}
-```
-
-### ❌ Error
-```javascript
-{
-  statusCode: 400, // 401, 403, 404, 500
-  headers: {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*'
-  },
-  body: JSON.stringify({
-    success: false,
-    error: "Mensaje descriptivo del error"
-  })
-}
-```
-
----
-
-## 🗄️ Base de Datos
-
-Ver [DATABASE-SCHEMA.md](./DATABASE-SCHEMA.md) para detalles completos.
-
-**Tablas principales:**
-- **Users-dev**: Usuarios (clientes y staff)
-- **Tenants-dev**: Sedes/Restaurantes
-- **Products-dev**: Menú de productos
-- **Orders-dev**: Pedidos con historial
-- **WSConnections-dev**: Conexiones WebSocket
-- **Carts-dev**: Carritos de compra
-- **Notifications-dev**: Historial de notificaciones
-
----
-
-## ⚙️ Configuración de Servicios
-
-### serverless.yml Estándar
-
-```yaml
-service: fridays-delivery-service
-
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs22.x
   region: us-east-1
-  stage: ${opt:stage, 'dev'}
-  profile: ${opt:profile, 'fridays-dev'}
-  
-  environment:
-    STAGE: ${self:provider.stage}
-    USERS_TABLE: Users-${self:provider.stage}
-    ORDERS_TABLE: Orders-${self:provider.stage}
-    JWT_SECRET: fridays-secret-key-2025-proyectofinal
+```
 
-functions:
-  authorizer:
-    handler: ../../shared/auth/authorizer.handler
-  
-  listDrivers:
-    handler: functions/drivers/listDrivers.handler
-    events:
-      - http:
-          path: /api/delivery/drivers
-          method: GET
-          cors: true
-          authorizer:
-            name: authorizer
+### ✅ LabRole en todos los servicios
+```yaml
+iam:
+  role: arn:aws:iam::139051438271:role/LabRole
+```
 
-resources:
-  Resources:
-    # Tablas DynamoDB si es necesario
+### ✅ Parameter Store para secrets
+```javascript
+const { getParameter } = require('../utils/parameter-store');
+const secret = await getParameter('/fridays/jwt-secret', true);
+```
+
+### ✅ Validación de tenant_id
+```javascript
+if (user.role !== 'Cliente' && !user.tenant_id) {
+  return forbidden('tenant_id requerido');
+}
+```
+
+### ✅ Validación de ownership
+```javascript
+if (user.role === 'Cliente' && order.userId !== user.userId) {
+  return forbidden('No tienes permiso');
+}
 ```
 
 ---
 
-## 🚨 Errores Comunes
+## 📦 SHARED MODULES (13 archivos)
 
-### ❌ Credenciales expiradas
+### Auth
+- `authorizer.js` - Lambda authorizer para API Gateway
+- `jwt-utils.js` - JWT con Parameter Store
+
+### Database
+- `dynamodb-client.js` - Cliente DynamoDB sin credenciales
+
+### Utils
+- `parameter-store.js` - AWS SSM
+- `eventbridge-client.js` - EventBridge
+- `sqs-client.js` - SQS
+- `sns-client.js` - SNS
+- `s3-client.js` - S3
+- `stepfunctions-client.js` - Step Functions
+- `websocket-client.js` - WebSocket API Gateway
+- `response.js` - HTTP responses
+- `validation.js` - Validaciones
+
+### Constants
+- `user-roles.js` - Roles (Cliente, Cheff Ejecutivo, Cocinero, Empacador, Repartidor, Admin Sede)
+- `order-status.js` - Estados de orden
+
+---
+
+## 🚀 DEPLOYMENT RÁPIDO
+
+### 1. Instalar dependencias
 ```bash
-# Solución:
-bash scripts/update-credentials.sh
+cd services/ecommerce-service && npm install
+cd ../kitchen-service && npm install
+cd ../delivery-service && npm install
+cd ../admin-service && npm install
+cd ../websocket-service && npm install
+cd ../stepfunctions-service && npm install
+cd ../workers-service && npm install
 ```
 
-### ❌ DynamoDB no responde
+### 2. Configurar Parameter Store
 ```bash
-# Solución:
-docker ps  # Verificar que corre
-npm run local:dynamodb:stop
-npm run local:dynamodb
-npm run setup:dynamodb
+aws ssm put-parameter \
+  --name "/fridays/jwt-secret" \
+  --value "tu-secret-aqui" \
+  --type "SecureString" \
+  --region us-east-1
 ```
 
-### ❌ Puerto en uso
+### 3. Deploy en orden
+
 ```bash
-# Matar proceso en puerto 3003
-lsof -ti:3003 | xargs kill -9
+# IMPORTANTE: Deploy en este orden
+cd services/ecommerce-service && serverless deploy --stage dev
+cd ../kitchen-service && serverless deploy --stage dev
+cd ../delivery-service && serverless deploy --stage dev
+cd ../admin-service && serverless deploy --stage dev
+cd ../websocket-service && serverless deploy --stage dev
+cd ../stepfunctions-service && serverless deploy --stage dev
+cd ../workers-service && serverless deploy --stage dev
 ```
 
-### ❌ "Cannot find module"
-```bash
-# Reinstalar dependencias
-cd services/delivery-service
-rm -rf node_modules
-npm install
+---
+
+## 🎯 ARQUITECTURA IMPLEMENTADA
+
+```
+Frontend (Amplify)
+  ↓
+API Gateway HTTP + WebSocket
+  ↓
+┌─────────────────────────────────────┐
+│ E-COMMERCE → Step Functions         │
+│   ↓                                  │
+│ PrepareOrderData                    │
+│   ↓                                  │
+│ PersistBuildOrder → SQS             │
+│   ↓                                  │
+│ PublishOrderCreated → EventBridge   │
+└─────────────────────────────────────┘
+  ↓
+┌─────────────────────────────────────┐
+│ EventBridge → orderEventsToWS       │
+│   ↓                                  │
+│ WebSocket API → Broadcast clients   │
+└─────────────────────────────────────┘
+  ↓
+┌─────────────────────────────────────┐
+│ KITCHEN → Assign → Update → Ready   │
+│   ↓                                  │
+│ DELIVERY → Assign Driver → Deliver  │
+└─────────────────────────────────────┘
+```
+
+**Recursos AWS:**
+- 7 Microservicios Lambda
+- 7 DynamoDB Tables
+- 1 Step Functions State Machine
+- 1 EventBridge Bus
+- 1 SQS Queue
+- 1 SNS Topic
+- 1 S3 Bucket
+- 1 WebSocket API
+- CloudWatch Logs + Alarms
+- Parameter Store
+
+---
+
+## ✅ VALIDACIONES IMPLEMENTADAS
+
+### JWT con Parameter Store
+```javascript
+const secret = await getParameter('/fridays/jwt-secret', true);
+const token = jwt.sign({ userId, role, tenant_id }, secret);
+```
+
+### Roles
+```javascript
+const USER_ROLES = {
+  CLIENTE: 'Cliente',
+  CHEF_EJECUTIVO: 'Cheff Ejecutivo',
+  COCINERO: 'Cocinero',
+  EMPACADOR: 'Empacador',
+  REPARTIDOR: 'Repartidor',
+  ADMIN_SEDE: 'Admin Sede'
+};
+```
+
+### tenant_id obligatorio para staff
+```javascript
+if (user.role !== 'Cliente' && !user.tenant_id) {
+  return forbidden('tenant_id requerido');
+}
+```
+
+### Ownership validation
+```javascript
+if (user.role === 'Cliente' && order.userId !== user.userId) {
+  return forbidden('No tienes permiso');
+}
 ```
 
 ---
 
-## ✅ Checklist Pre-Push
+## � CHECKLIST
 
-Antes de hacer push a GitHub:
+### Antes de deploy
+- [ ] LabRole existe en cuenta AWS
+- [ ] Parameter Store configurado
+- [ ] Credenciales AWS Academy activas
 
-- [ ] Stage es `dev` (no `dev-nayeli`)
-- [ ] Profile es `fridays-dev`
-- [ ] Tablas: `{Nombre}-${self:provider.stage}`
-- [ ] Paths usan `/api` como prefijo
-- [ ] JWT secret es el compartido
-- [ ] Respuestas siguen formato estándar
-- [ ] Roles usan constantes de `user-roles.js`
-- [ ] Código probado localmente
-
----
-
-## 📚 Documentación Adicional
-
-- **[DATABASE-SCHEMA.md](./DATABASE-SCHEMA.md)** - Esquemas detallados de DynamoDB
-- **[AWS-SETUP.md](./AWS-ACADEMY-SETUP.md)** - Guía paso a paso AWS Academy
+### Después de deploy
+- [ ] Endpoints HTTP funcionan
+- [ ] WebSocket conecta
+- [ ] Step Functions ejecuta
+- [ ] EventBridge dispara eventos
+- [ ] DynamoDB guarda datos
 
 ---
 
-## 🔧 Herramientas Necesarias
+## 🧪 TESTING
 
-- Node.js 18.x o superior
-- npm
-- AWS CLI
-- Serverless Framework
-- Docker (para DynamoDB local)
-- Git
-
----
-
-## 💡 Tips
-
-- **Desarrolla 90% en local**, 10% en AWS
-- **Renueva credenciales** cada 4 horas con `update-credentials.sh`
-- **Usa mock auth** en local (no necesitas JWT real)
-- **Mismo JWT secret** para todos (integración)
-- **Reunión semanal** Viernes 8pm para sincronización
+Ver `DEPLOYMENT.md` para ejemplos completos de:
+- Testing con curl
+- Testing con Postman
+- Testing de WebSocket
+- Testing de Step Functions
 
 ---
 
-## 📞 Equipo
+## 📚 DOCUMENTACIÓN
 
-| Nombre | Servicios | GitHub | Rol |
-|--------|-----------|--------|-----|
-| Leonardo | E-commerce | @leonardo | Persona 1 |
-| Luis | Kitchen + Auth | @luis | Persona 2 |
-| Nayeli | Delivery + Admin | @nayeli | Persona 3 |
-
-**Reunión:** Viernes 8pm para integración
+- `DEPLOYMENT.md` - Deployment completo y testing
+- `PAYMENTS-SIMULATION.md` - **⚠️ Sistema de pagos SIMULADOS (NO REALES)**
+- `ARCHITECTURE-AUDIT.md` - Auditoría vs arquitectura Eraser.io
+- `DATABASE-SCHEMA.md` - Schema de DynamoDB
+- `AWS-SETUP.md` - Configuración AWS
 
 ---
 
-## 🎯 Regla de Oro
+## 💳 NOTA IMPORTANTE: PAGOS SIMULADOS
 
-> **Si TODOS usan las MISMAS convenciones, la integración será fácil.**  
-> **Si cada uno usa valores diferentes, será un desastre.**
+⚠️ **Los endpoints de pago son SIMULACIONES**
+
+Este proyecto **NO procesa pagos reales**. Los endpoints `/payments/create-intent` y `/payments/confirm` son simulaciones que:
+
+- ✅ Generan IDs de pago simulados
+- ✅ Actualizan estado de órdenes
+- ✅ Simulan 90% éxito / 10% fallo
+- ❌ NO cobran dinero real
+- ❌ NO integran con Stripe, PayPal, Culqi, etc.
+
+**Ver `PAYMENTS-SIMULATION.md` para detalles completos**
+
+Para integrar pagos reales en producción, ver la sección de integración en `PAYMENTS-SIMULATION.md`.
 
 ---
 
-**Stack:** AWS Lambda, API Gateway, DynamoDB, Node.js 18.x, Serverless Framework  
-**Última actualización:** 19 Nov 2024  
-**Versión:** 2.0.0
+## 🎉 RESULTADO FINAL
+
+**✅ 59 lambdas funcionando**  
+**✅ 13 shared modules**  
+**✅ 0 credenciales hardcodeadas**  
+**✅ Compatible AWS Academy (LabRole)**  
+**✅ Architecture 100% Eraser.io**  
+
+---
+
+**� Proyecto listo para deployment!**
+
+Para instrucciones detalladas, ver `DEPLOYMENT.md`

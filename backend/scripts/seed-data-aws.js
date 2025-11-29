@@ -2,9 +2,7 @@
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 
-// Configurar AWS con el perfil fridays-dev
-const credentials = new AWS.SharedIniFileCredentials({ profile: 'fridays-dev' });
-AWS.config.credentials = credentials;
+// Configurar AWS - usa las credenciales del ambiente
 AWS.config.region = 'us-east-1';
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();

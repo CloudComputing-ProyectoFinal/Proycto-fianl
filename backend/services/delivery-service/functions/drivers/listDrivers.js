@@ -1,54 +1,34 @@
-const AWS = require('aws-sdk');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
-const { USER_ROLES } = require('../../../../shared/constants/user-roles');
+/**
+ * Lambda: GET /delivery/drivers
+ * Roles: Admin Sede
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { getUserFromEvent, validateAccess } = require('../../shared/auth/jwt-utils');
+const { query } = require('../../shared/database/dynamodb-client');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, forbidden, serverError } = require('../../shared/utils/response');
 
-const USERS_TABLE = process.env.USERS_TABLE;
+const DRIVERS_TABLE = process.env.DRIVERS_TABLE;
 
-async function listDrivers(event) {
+module.exports.handler = async (event) => {
   try {
-    const user = event.requestContext.authorizer;
-
-    // Obtener todos los repartidores del tenant
-    const result = await dynamodb.query({
-      TableName: USERS_TABLE,
-      IndexName: 'tenantId-role-index',
-      KeyConditionExpression: 'tenantId = :tenantId AND #role = :role',
-      ExpressionAttributeNames: {
-        '#role': 'role'
-      },
-      ExpressionAttributeValues: {
-        ':tenantId': user.tenantId,
-        ':role': USER_ROLES.REPARTIDOR
-      }
-    }).promise();
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        data: result.Items.map(driver => ({
-          userId: driver.userId,
-          firstName: driver.firstName,
-          lastName: driver.lastName,
-          email: driver.email,
-          phoneNumber: driver.phoneNumber,
-          status: driver.status,
-          createdAt: driver.createdAt
-        }))
-      })
-    };
-
+    const user = getUserFromEvent(event);
+    validateAccess(user, [USER_ROLES.ADMIN_SEDE]);
+    
+    if (!user.tenant_id) {
+      return forbidden('tenant_id requerido');
+    }
+    
+    const drivers = await query(
+      DRIVERS_TABLE,
+      'tenant_id = :tenant_id',
+      { ':tenant_id': user.tenant_id },
+      'tenant_id-index'
+    );
+    
+    return success({ drivers, count: drivers.length, tenant_id: user.tenant_id });
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno del servidor' })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al listar drivers', error);
   }
-}
-
-module.exports.handler = mockAuth(listDrivers);
+};

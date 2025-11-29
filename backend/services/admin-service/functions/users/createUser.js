@@ -1,106 +1,78 @@
-const AWS = require('aws-sdk');
-const { v4: uuidv4 } = require('uuid');
-const bcrypt = require('bcryptjs');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
-const { USER_ROLES, isValidRole } = require('../../../../shared/constants/user-roles');
+/**
+ * Lambda: POST /admin/users
+ * Roles: Admin Sede
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const bcrypt = require('bcryptjs');
+const { getUserFromEvent, validateAccess } = require('../../shared/auth/jwt-utils');
+const { putItem } = require('../../shared/database/dynamodb-client');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, badRequest, forbidden, serverError } = require('../../shared/utils/response');
+const { v4: uuidv4 } = require('uuid');
 
 const USERS_TABLE = process.env.USERS_TABLE;
 
-async function createUser(event) {
+module.exports.handler = async (event) => {
   try {
-    const admin = event.requestContext.authorizer;
-    const { firstName, lastName, email, phoneNumber, password, role } = JSON.parse(event.body);
-
-    // Solo ADMIN_SEDE puede crear usuarios
-    if (admin.role !== USER_ROLES.ADMIN_SEDE) {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'No tienes permisos' })
-      };
+    const user = getUserFromEvent(event);
+    validateAccess(user, [USER_ROLES.ADMIN_SEDE]);
+    
+    const body = JSON.parse(event.body);
+    
+    // Validar campos requeridos
+    if (!body.email || !body.password || !body.role) {
+      return badRequest('email, password y role son requeridos');
     }
-
-    // Validar datos requeridos
-    if (!firstName || !lastName || !email || !phoneNumber || !password || !role) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Faltan datos requeridos' })
-      };
+    
+    if (!body.name && (!body.firstName || !body.lastName)) {
+      return badRequest('Debe proporcionar name o firstName/lastName');
     }
-
-    // Validar rol
-    if (!isValidRole(role)) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Rol inválido' })
-      };
+    
+    if (!body.address || !body.phoneNumber) {
+      return badRequest('address y phoneNumber son requeridos');
     }
-
-    // Verificar que el email no existe
-    const existingUser = await dynamodb.query({
-      TableName: USERS_TABLE,
-      IndexName: 'email-index',
-      KeyConditionExpression: 'email = :email',
-      ExpressionAttributeValues: {
-        ':email': email
-      }
-    }).promise();
-
-    if (existingUser.Items.length > 0) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'El email ya está registrado' })
-      };
+    
+    if (!user.tenant_id) {
+      return forbidden('tenant_id requerido');
     }
-
-    // Hash de la contraseña
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Crear usuario
+    
+    // Soportar tanto "name" como "firstName/lastName"
+    let firstName, lastName;
+    if (body.name) {
+      const parts = body.name.trim().split(' ');
+      firstName = parts[0]; 
+      lastName = parts.slice(1).join(' ') || parts[0];
+    } else {
+      firstName = body.firstName;
+      lastName = body.lastName;
+    }
+    
+    const passwordHash = await bcrypt.hash(body.password, 10);
+    
+    // Permitir especificar tenant_id en el body, por defecto usar el del admin
+    const targetTenantId = body.tenant_id || user.tenant_id;
+    
     const newUser = {
       userId: uuidv4(),
-      tenantId: role === USER_ROLES.CLIENTE ? null : admin.tenantId,
-      role,
+      email: body.email,
+      passwordHash,
       firstName,
       lastName,
-      email,
-      phoneNumber,
-      passwordHash,
+      role: body.role,
+      tenant_id: targetTenantId,
+      address: body.address,
+      phoneNumber: body.phoneNumber,
       status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: new Date().toISOString()
     };
-
-    await dynamodb.put({
-      TableName: USERS_TABLE,
-      Item: newUser
-    }).promise();
-
-    // No retornar el passwordHash
-    delete newUser.passwordHash;
-
-    return {
-      statusCode: 201,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        data: newUser
-      })
-    };
-
+    
+    await putItem(USERS_TABLE, newUser);
+    
+    const { passwordHash: _, ...userWithoutPassword } = newUser;
+    
+    return success({ user: userWithoutPassword });
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno del servidor' })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al crear usuario', error);
   }
-}
-
-module.exports.handler = mockAuth(createUser);
+};

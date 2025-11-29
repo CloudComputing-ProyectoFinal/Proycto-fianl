@@ -1,55 +1,37 @@
-const AWS = require('aws-sdk');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
-const { USER_ROLES } = require('../../../../shared/constants/user-roles');
+/**
+ * Lambda: GET /delivery/drivers/available
+ * Roles: Empacador, Admin Sede
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { getUserFromEvent, validateAccess } = require('../../shared/auth/jwt-utils');
+const { query } = require('../../shared/database/dynamodb-client');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, forbidden, serverError } = require('../../shared/utils/response');
 
-const USERS_TABLE = process.env.USERS_TABLE;
+const DRIVERS_TABLE = process.env.DRIVERS_TABLE;
 
-async function getAvailable(event) {
+module.exports.handler = async (event) => {
   try {
-    const user = event.requestContext.authorizer;
-
-    // Obtener repartidores disponibles del mismo tenant
-    const result = await dynamodb.query({
-      TableName: USERS_TABLE,
-      IndexName: 'tenantId-role-index',
-      KeyConditionExpression: 'tenantId = :tenantId AND #role = :role',
-      FilterExpression: '#status = :status',
-      ExpressionAttributeNames: {
-        '#role': 'role',
-        '#status': 'status'
-      },
-      ExpressionAttributeValues: {
-        ':tenantId': user.tenantId,
-        ':role': USER_ROLES.REPARTIDOR,
-        ':status': 'ACTIVE'
-      }
-    }).promise();
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        data: result.Items.map(driver => ({
-          userId: driver.userId,
-          firstName: driver.firstName,
-          lastName: driver.lastName,
-          phoneNumber: driver.phoneNumber,
-          status: driver.status
-        }))
-      })
-    };
-
+    const user = getUserFromEvent(event);
+    validateAccess(user, [USER_ROLES.EMPACADOR, USER_ROLES.ADMIN_SEDE]);
+    
+    if (!user.tenant_id) {
+      return forbidden('tenant_id requerido');
+    }
+    
+    const allDrivers = await query(
+      DRIVERS_TABLE,
+      'tenant_id = :tenant_id',
+      { ':tenant_id': user.tenant_id },
+      'tenant_id-index'
+    );
+    
+    // Filtrar solo los disponibles
+    const drivers = allDrivers.filter(d => d.isAvailable === true);
+    
+    return success({ drivers, count: drivers.length, tenant_id: user.tenant_id });
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno del servidor' })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al obtener drivers disponibles', error);
   }
-}
-
-module.exports.handler = mockAuth(getAvailable);
+};

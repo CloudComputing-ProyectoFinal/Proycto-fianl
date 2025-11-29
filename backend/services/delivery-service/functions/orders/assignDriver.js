@@ -1,112 +1,51 @@
-const AWS = require('aws-sdk');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
-const { USER_ROLES } = require('../../../../shared/constants/user-roles');
+/**
+ * Lambda: POST /delivery/orders/{orderId}/assign
+ * Roles: Empacador
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
-const eventBridge = new AWS.EventBridge();
+const { getUserFromEvent, validateAccess } = require('../../shared/auth/jwt-utils');
+const { getItem, updateItem } = require('../../shared/database/dynamodb-client');
+const { publishEvent } = require('../../shared/utils/eventbridge-client');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, notFound, badRequest, serverError } = require('../../shared/utils/response');
 
 const ORDERS_TABLE = process.env.ORDERS_TABLE;
-const USERS_TABLE = process.env.USERS_TABLE;
 
-async function assignDriver(event) {
+module.exports.handler = async (event) => {
   try {
-    const { orderId } = event.pathParameters;
-    const { driverId } = JSON.parse(event.body);
-    const user = event.requestContext.authorizer;
-
-    // Solo ADMIN_SEDE o REPARTIDOR pueden asignar
-    if (![USER_ROLES.ADMIN_SEDE, USER_ROLES.REPARTIDOR].includes(user.role)) {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'No tienes permisos' })
-      };
+    const user = getUserFromEvent(event);
+    validateAccess(user, [USER_ROLES.EMPACADOR]);
+    
+    const orderId = event.pathParameters.orderId;
+    const body = JSON.parse(event.body);
+    
+    if (!body.driverId) {
+      return badRequest('driverId requerido');
     }
-
-    // Verificar que la orden existe y está en estado READY
-    const orderResult = await dynamodb.get({
-      TableName: ORDERS_TABLE,
-      Key: { orderId }
-    }).promise();
-
-    if (!orderResult.Item) {
-      return {
-        statusCode: 404,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Orden no encontrada' })
-      };
+    
+    const order = await getItem(ORDERS_TABLE, { orderId });
+    
+    if (!order) {
+      return notFound('Orden no encontrada');
     }
-
-    if (orderResult.Item.status !== 'READY') {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'La orden debe estar en estado READY' })
-      };
-    }
-
-    // Verificar que el driver existe
-    const driverResult = await dynamodb.get({
-      TableName: USERS_TABLE,
-      Key: { userId: driverId }
-    }).promise();
-
-    if (!driverResult.Item || driverResult.Item.role !== USER_ROLES.REPARTIDOR) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Repartidor no encontrado' })
-      };
-    }
-
-    // Actualizar orden
-    const updatedOrder = await dynamodb.update({
-      TableName: ORDERS_TABLE,
-      Key: { orderId },
-      UpdateExpression: 'SET #status = :status, driverId = :driverId, assignedAt = :assignedAt, updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#status': 'status'
-      },
-      ExpressionAttributeValues: {
+    
+    const updated = await updateItem(
+      ORDERS_TABLE,
+      { orderId },
+      'SET #status = :status, assignedDriverId = :driverId, updatedAt = :updatedAt',
+      {
         ':status': 'DELIVERING',
-        ':driverId': driverId,
-        ':assignedAt': new Date().toISOString(),
+        ':driverId': body.driverId,
         ':updatedAt': new Date().toISOString()
       },
-      ReturnValues: 'ALL_NEW'
-    }).promise();
-
-    // Emitir evento para WebSocket
-    await eventBridge.putEvents({
-      Entries: [{
-        Source: 'fridays.delivery',
-        DetailType: 'OrderStatusChanged',
-        Detail: JSON.stringify({
-          orderId,
-          status: 'DELIVERING',
-          driverId,
-          tenantId: orderResult.Item.tenantId
-        })
-      }]
-    }).promise();
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        data: updatedOrder.Attributes
-      })
-    };
-
+      { '#status': 'status' }
+    );
+    
+    await publishEvent('DriverAssigned', { orderId, driverId: body.driverId }, 'fridays.delivery');
+    
+    return success({ order: updated });
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno del servidor' })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al asignar driver', error);
   }
-}
-
-module.exports.handler = mockAuth(assignDriver);
+};

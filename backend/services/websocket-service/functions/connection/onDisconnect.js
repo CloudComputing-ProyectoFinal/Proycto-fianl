@@ -1,30 +1,23 @@
-const AWS = require('aws-sdk');
+/**
+ * Lambda: WebSocket $disconnect
+ * Remove connection from table
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { deleteItem } = require('../../shared/database/dynamodb-client');
 
-const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE;
+const WS_CONNECTIONS_TABLE = process.env.WS_CONNECTIONS_TABLE;
 
-async function onDisconnect(event) {
+module.exports.handler = async (event) => {
   try {
     const connectionId = event.requestContext.connectionId;
-
-    await dynamodb.delete({
-      TableName: CONNECTIONS_TABLE,
-      Key: { connectionId }
-    }).promise();
-
-    return {
-      statusCode: 200,
-      body: 'Disconnected'
-    };
-
+    
+    await deleteItem(WS_CONNECTIONS_TABLE, { connectionId });
+    
+    console.log(`✅ Connection removed: ${connectionId}`);
+    
+    return { statusCode: 200, body: 'Disconnected' };
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      body: 'Failed to disconnect'
-    };
+    console.error('❌ Error:', error);
+    return { statusCode: 500, body: 'Error' };
   }
-}
-
-module.exports.handler = onDisconnect;
+};

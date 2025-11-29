@@ -1,78 +1,102 @@
-const AWS = require('aws-sdk');
+/**
+ * Lambda: POST /auth/register
+ * Roles: PUBLIC (Cliente)
+ * 
+ * ⚠️ SEGURIDAD:
+ * - NO incluye credenciales hardcodeadas
+ * - Usa módulos compartidos (sin credenciales)
+ * - Valida datos de entrada
+ * - Hash de contraseñas con bcrypt
+ */
+
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
+const { putItem, query } = require('../../shared/database/dynamodb-client');
+const { generateToken } = require('../../shared/auth/jwt-utils');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, badRequest, serverError } = require('../../shared/utils/response');
+const { validateEmail, validateRequiredFields } = require('../../shared/utils/validation');
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
 const USERS_TABLE = process.env.USERS_TABLE;
 
-async function register(event) {
+module.exports.handler = async (event) => {
+  console.log('📝 Register request');
+
   try {
-    const { firstName, lastName, email, password, phoneNumber, address } = JSON.parse(event.body);
+    // Manejar tanto event.body (API Gateway) como event directo (testing)
+    const body = event.body ? JSON.parse(event.body) : event;
 
-    if (!firstName || !lastName || !email || !password || !phoneNumber) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Datos incompletos' })
-      };
+    // Validar campos requeridos
+    validateRequiredFields(body, ['email', 'password', 'firstName', 'lastName']);
+
+    const { email, password, firstName, lastName, phoneNumber, address } = body;
+
+    // Validar email
+    if (!validateEmail(email)) {
+      return badRequest('Email inválido');
     }
 
-    // Verificar email existente
-    const existing = await dynamodb.query({
-      TableName: USERS_TABLE,
-      IndexName: 'email-index',
-      KeyConditionExpression: 'email = :email',
-      ExpressionAttributeValues: { ':email': email }
-    }).promise();
-
-    if (existing.Items.length > 0) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Email ya registrado' })
-      };
+    // Validar contraseña (mínimo 6 caracteres)
+    if (password.length < 6) {
+      return badRequest('La contraseña debe tener al menos 6 caracteres');
     }
 
+    // Verificar si el email ya existe
+    const existingUsers = await query(
+      USERS_TABLE,
+      'email = :email',
+      { ':email': email },
+      'email-index'
+    );
+
+    if (existingUsers && existingUsers.length > 0) {
+      return badRequest('El email ya está registrado');
+    }
+
+    // Hash de la contraseña
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Crear usuario
+    const userId = uuidv4();
+    const timestamp = new Date().toISOString();
+
     const newUser = {
-      userId: uuidv4(),
-      role: 'CLIENTE',
+      userId,
+      email,
+      passwordHash,
       firstName,
       lastName,
-      email,
-      phoneNumber,
-      passwordHash,
-      address,
+      phoneNumber: phoneNumber || null,
+      address: address || null,
+      role: USER_ROLES.CLIENTE, // Por defecto, cliente
+      // tenant_id: NO se incluye para clientes (no usan multi-tenancy)
       status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: timestamp,
+      updatedAt: timestamp
     };
 
-    await dynamodb.put({
-      TableName: USERS_TABLE,
-      Item: newUser
-    }).promise();
+    await putItem(USERS_TABLE, newUser);
 
-    delete newUser.passwordHash;
+    console.log(`✅ Usuario registrado: ${userId}`);
 
-    return {
-      statusCode: 201,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ 
-        success: true, 
-        message: 'Usuario registrado exitosamente',
-        data: newUser 
-      })
-    };
+    // Generar token JWT
+    const token = await generateToken({
+      userId: newUser.userId,
+      email: newUser.email,
+      role: newUser.role,
+      tenant_id: newUser.tenant_id
+    });
+
+    // Respuesta sin la contraseña
+    const { passwordHash: _, ...userWithoutPassword } = newUser;
+
+    return success({
+      user: userWithoutPassword,
+      token
+    }, 'Usuario registrado exitosamente');
+
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno' })
-    };
+    console.error('❌ Register error:', error);
+    return serverError('Error al registrar usuario', error);
   }
-}
-
-module.exports.handler = register;
+};

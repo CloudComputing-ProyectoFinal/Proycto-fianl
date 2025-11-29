@@ -1,52 +1,30 @@
-const AWS = require('aws-sdk');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
-const { USER_ROLES } = require('../../../../shared/constants/user-roles');
+/**
+ * Lambda: GET /admin/sedes
+ * Roles: Admin Sede
+ * 
+ * Lista todas las sedes (tenants) del sistema
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { getUserFromEvent, validateAccess } = require('../../shared/auth/jwt-utils');
+const { scan } = require('../../shared/database/dynamodb-client');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, serverError } = require('../../shared/utils/response');
 
-const TENANTS_TABLE = process.env.TENANTS_TABLE;
+const TENANTS_TABLE = process.env.TENANTS_TABLE || 'Tenants-dev';
 
-async function listSedes(event) {
+module.exports.handler = async (event) => {
   try {
-    const user = event.requestContext.authorizer;
-
-    // Solo ADMIN_SEDE puede ver sedes
-    if (user.role !== USER_ROLES.ADMIN_SEDE) {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'No tienes permisos' })
-      };
-    }
-
-    const result = await dynamodb.scan({
-      TableName: TENANTS_TABLE,
-      FilterExpression: '#status = :status',
-      ExpressionAttributeNames: {
-        '#status': 'status'
-      },
-      ExpressionAttributeValues: {
-        ':status': 'ACTIVE'
-      }
-    }).promise();
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        data: result.Items
-      })
-    };
-
+    const user = getUserFromEvent(event);
+    validateAccess(user, [USER_ROLES.ADMIN_SEDE]);
+    
+    const sedes = await scan(TENANTS_TABLE);
+    
+    return success({ 
+      sedes,
+      count: sedes.length 
+    });
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno del servidor' })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al listar sedes', error);
   }
-}
-
-module.exports.handler = mockAuth(listSedes);
+};

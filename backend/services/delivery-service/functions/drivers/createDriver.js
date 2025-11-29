@@ -1,97 +1,43 @@
-const AWS = require('aws-sdk');
+/**
+ * Lambda: POST /delivery/drivers
+ * Roles: Admin Sede
+ */
+
+const { getUserFromEvent, validateAccess } = require('../../shared/auth/jwt-utils');
+const { putItem } = require('../../shared/database/dynamodb-client');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, forbidden, serverError } = require('../../shared/utils/response');
 const { v4: uuidv4 } = require('uuid');
-const bcrypt = require('bcryptjs');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
-const { USER_ROLES } = require('../../../../shared/constants/user-roles');
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const DRIVERS_TABLE = process.env.DRIVERS_TABLE;
 
-const USERS_TABLE = process.env.USERS_TABLE;
-
-async function createDriver(event) {
+module.exports.handler = async (event) => {
   try {
-    const user = event.requestContext.authorizer;
-    const { firstName, lastName, email, phoneNumber, password } = JSON.parse(event.body);
-
-    // Solo ADMIN_SEDE puede crear repartidores
-    if (user.role !== USER_ROLES.ADMIN_SEDE) {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'No tienes permisos' })
-      };
+    const user = getUserFromEvent(event);
+    validateAccess(user, [USER_ROLES.ADMIN_SEDE]);
+    
+    if (!user.tenant_id) {
+      return forbidden('tenant_id requerido');
     }
-
-    // Validar datos requeridos
-    if (!firstName || !lastName || !email || !phoneNumber || !password) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Faltan datos requeridos' })
-      };
-    }
-
-    // Verificar que el email no existe
-    const existingUser = await dynamodb.query({
-      TableName: USERS_TABLE,
-      IndexName: 'email-index',
-      KeyConditionExpression: 'email = :email',
-      ExpressionAttributeValues: {
-        ':email': email
-      }
-    }).promise();
-
-    if (existingUser.Items.length > 0) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'El email ya está registrado' })
-      };
-    }
-
-    // Hash de la contraseña
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Crear repartidor
-    const newDriver = {
-      userId: uuidv4(),
-      tenantId: user.tenantId,
-      role: USER_ROLES.REPARTIDOR,
-      firstName,
-      lastName,
-      email,
-      phoneNumber,
-      passwordHash,
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    
+    const body = JSON.parse(event.body);
+    
+    const driver = {
+      driverId: uuidv4(),
+      userId: body.userId,
+      name: body.name,
+      vehicleType: body.vehicleType || 'moto',
+      tenant_id: user.tenant_id,
+      isAvailable: true,
+      currentDeliveries: 0,
+      createdAt: new Date().toISOString()
     };
-
-    await dynamodb.put({
-      TableName: USERS_TABLE,
-      Item: newDriver
-    }).promise();
-
-    // No retornar el passwordHash
-    delete newDriver.passwordHash;
-
-    return {
-      statusCode: 201,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        data: newDriver
-      })
-    };
-
+    
+    await putItem(DRIVERS_TABLE, driver);
+    
+    return success({ driver });
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno del servidor' })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al crear driver', error);
   }
-}
-
-module.exports.handler = mockAuth(createDriver);
+};

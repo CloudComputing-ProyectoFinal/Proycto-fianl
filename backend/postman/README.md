@@ -1,268 +1,376 @@
-# 📬 Colecciones de Postman - Fridays Perú
+# 📮 Postman Collections - Fridays Perú
 
-Este directorio contiene las colecciones de Postman para probar todos los microservicios del proyecto.
+Colecciones completas para probar todos los servicios del backend.
 
 ## 📦 Colecciones Disponibles
 
-### 1️⃣ Delivery Service
-**Archivo:** `Delivery-Service.postman_collection.json`
+### 1️⃣ E-Commerce Service
+**Archivo:** `Fridays-Ecommerce-Service.postman_collection.json`
 
-**Puerto Local:** `3003`
+**Endpoints incluidos:**
+- 🔐 **AUTH** (4 endpoints)
+  - Register, Login, Refresh Token, Logout
+- 🍔 **MENU** (5 endpoints)
+  - Listar productos, filtrar por categoría, buscar, ver detalles
+- 🛒 **CART** (5 endpoints)
+  - Agregar, ver, actualizar, eliminar, limpiar carrito
+- 📦 **ORDERS** (5 endpoints)
+  - Crear orden, ver orden, mis órdenes, listar todas, cancelar
+- 💳 **PAYMENTS** (2 endpoints)
+  - ⚡ Pago simulado 1-click (solo requiere orderId)
+  - Create payment intent (opcional)
+- ⚙️ **PRODUCTS ADMIN** (5 endpoints)
+  - CRUD completo de productos
 
-**Endpoints:**
-- ✅ `GET /api/delivery/drivers` - Listar todos los repartidores
-- ✅ `GET /api/delivery/drivers/available` - Repartidores disponibles
-- ✅ `POST /api/delivery/drivers` - Crear repartidor
-- ✅ `POST /api/delivery/orders/:orderId/assign` - Asignar repartidor a orden
-- ✅ `PUT /api/delivery/orders/:orderId/status` - Actualizar estado de entrega
-
----
-
-### 2️⃣ Admin Service
-**Archivo:** `Admin-Service.postman_collection.json`
-
-**Puerto Local:** `3004`
-
-**Endpoints:**
-- ✅ `GET /api/admin/dashboard` - Estadísticas del dashboard
-- ✅ `GET /api/admin/orders/today` - Órdenes del día
-- ✅ `GET /api/admin/users` - Listar usuarios (con filtro por rol)
-- ✅ `POST /api/admin/users` - Crear usuario
-- ✅ `GET /api/admin/sedes` - Listar sedes
+**Total:** 26 requests
 
 ---
 
-### 3️⃣ WebSocket Service
-**Archivo:** `WebSocket-Service.postman_collection.json`
+### 2️⃣ Kitchen Service
+**Archivo:** `Fridays-Kitchen-Service.postman_collection.json`
 
-**Puerto Local:** `3005`
+**Endpoints incluidos:**
+- 📋 **ORDERS** (3 endpoints)
+  - Ver pendientes, actualizar status, ver detalles
+- 👨‍🍳 **CHEFS** (6 endpoints)
+  - CRUD chefs, asignar a orden
 
-**Conexión:** `ws://localhost:3005`
-
-**Eventos:**
-- 🔌 `$connect` - Conexión WebSocket
-- 🔌 `$disconnect` - Desconexión
-- 📨 `OrderStatusChanged` - Cambio de estado de orden (EventBridge)
+**Total:** 9 requests
 
 ---
 
-## 🚀 Cómo Importar en Postman
+### 3️⃣ Delivery Service
+**Archivo:** `Fridays-Delivery-Service.postman_collection.json`
 
-### Opción 1: Importar Individual
+**Endpoints incluidos:**
+- 🚗 **DRIVERS** (6 endpoints)
+  - CRUD repartidores, ver disponibles
+- 📦 **ORDERS** (4 endpoints)
+  - Asignar repartidor, actualizar status, tracking, ubicación GPS
+
+**Total:** 10 requests
+
+---
+
+### 4️⃣ Admin Service
+**Archivo:** `Fridays-Admin-Service.postman_collection.json`
+
+**Endpoints incluidos:**
+- 📊 **DASHBOARD** (4 endpoints)
+  - Dashboard general, órdenes del día, métricas de ventas, productos top
+- 👥 **USERS** (6 endpoints)
+  - CRUD usuarios, cambiar rol
+- 🏢 **SEDES** (5 endpoints)
+  - CRUD sucursales
+
+**Total:** 15 requests
+
+---
+
+### 5️⃣ WebSocket Service
+**Archivo:** `Fridays-WebSocket-Service.postman_collection.json`
+
+**Contenido:**
+- 📡 Instrucciones de conexión WebSocket
+- 📨 Ejemplo de envío de notificaciones
+- 📋 Guía completa para probar (JavaScript, wscat, Browser)
+
+**Nota:** WebSocket requiere cliente especial (no REST).
+
+---
+
+## 🚀 Cómo Usar las Colecciones
+
+### Paso 1: Importar a Postman
+
 1. Abre Postman
-2. Clic en **"Import"** (arriba a la izquierda)
-3. Arrastra el archivo `.json` o selecciona **"Upload Files"**
-4. Selecciona el archivo de la colección
-5. Clic en **"Import"**
+2. Click en **Import**
+3. Arrastra los 5 archivos `.json` o selecciónalos
+4. Confirm import
 
-### Opción 2: Importar Todas
-1. Abre Postman
-2. Clic en **"Import"**
-3. Selecciona los 3 archivos `.json` a la vez
-4. Clic en **"Import"**
+### Paso 2: Configurar Variables
+
+Después de hacer `sls deploy`, actualiza las URLs base en cada colección:
+
+#### E-Commerce Service
+```
+Variable: baseUrl
+Valor: https://YOUR-API-ID.execute-api.us-east-1.amazonaws.com/dev
+```
+
+#### Kitchen Service
+```
+Variable: baseUrl
+Valor: https://YOUR-KITCHEN-API-ID.execute-api.us-east-1.amazonaws.com/dev
+```
+
+#### Delivery Service
+```
+Variable: baseUrl
+Valor: https://YOUR-DELIVERY-API-ID.execute-api.us-east-1.amazonaws.com/dev
+```
+
+#### Admin Service
+```
+Variable: baseUrl
+Valor: https://YOUR-ADMIN-API-ID.execute-api.us-east-1.amazonaws.com/dev
+```
+
+#### WebSocket Service
+```
+Variable: wsUrl
+Valor: wss://YOUR-WS-ID.execute-api.us-east-1.amazonaws.com/dev
+```
+
+**💡 Tip:** Las URLs aparecerán en la consola después de `sls deploy` o en el archivo `deployed-endpoints.txt` si usas `deploy-all.sh`.
+
+### Paso 3: Flujo de Testing Recomendado
+
+#### 1️⃣ Autenticación
+```
+E-Commerce > AUTH > Register
+E-Commerce > AUTH > Login
+```
+
+Después del login, el **token JWT se guarda automáticamente** en la variable `{{token}}`.
+
+#### 2️⃣ Menú y Carrito
+```
+E-Commerce > MENU > Listar Productos
+E-Commerce > CART > Add to Cart
+E-Commerce > CART > Get Cart
+```
+
+#### 3️⃣ Crear Orden
+```
+E-Commerce > ORDERS > Create Order (Checkout)
+```
+
+El `orderId` se guarda automáticamente en `{{orderId}}`.
+
+#### 4️⃣ Pago Simulado (1 Click)
+```
+E-Commerce > PAYMENTS > Pagar Orden (1 Click)
+```
+
+**Body del request:**
+```json
+{
+  "orderId": "{{orderId}}"
+}
+```
+
+✅ **No necesitas tarjeta de crédito.** Es 100% simulado.
+
+#### 5️⃣ Cocina
+```
+Kitchen > ORDERS > Get Pending Orders
+Kitchen > ORDERS > Update Order Status
+```
+
+#### 6️⃣ Delivery
+```
+Delivery > DRIVERS > Get Available Drivers
+Delivery > ORDERS > Assign Driver to Order
+Delivery > ORDERS > Update Order Status
+Delivery > ORDERS > Get Order Tracking
+```
+
+#### 7️⃣ Admin
+```
+Admin > DASHBOARD > Get Dashboard
+Admin > DASHBOARD > Get Orders Today
+```
 
 ---
 
-## ⚙️ Configuración de Variables
+## 🔑 Autenticación
 
-Cada colección tiene variables pre-configuradas para desarrollo local:
+### Token JWT Automático
 
-### Delivery Service
-```json
-{
-  "base_url_delivery": "http://localhost:3003/local",
-  "jwt_token": "mock-token-for-local-dev",
-  "driver_id": ""
-}
+Las colecciones están configuradas para usar **Bearer Token** automáticamente.
+
+- Después de **Login**, el token se guarda en `{{token}}`
+- Todos los requests subsiguientes usan ese token
+- El token expira en 24h (puedes usar **Refresh Token**)
+
+### Renovar Token Expirado
+
 ```
-
-### Admin Service
-```json
-{
-  "base_url_admin": "http://localhost:3004/local",
-  "jwt_token": "mock-token-for-local-dev"
-}
-```
-
-### WebSocket Service
-```json
-{
-  "websocket_url": "ws://localhost:3005"
-}
+E-Commerce > AUTH > Refresh Token
 ```
 
 ---
 
-## 🧪 Orden Sugerido para Probar
+## 📝 Variables de Colección
 
-### 1️⃣ Primero: Delivery Service
+Cada colección maneja variables automáticamente:
 
+| Variable | Descripción | Auto-guardado |
+|----------|-------------|---------------|
+| `baseUrl` | URL del API Gateway | ❌ Manual |
+| `token` | JWT token | ✅ Automático |
+| `orderId` | ID de orden creada | ✅ Automático |
+| `connectionId` | WebSocket connection | ✅ Automático |
+
+---
+
+## 🧪 Scripts de Testing Incluidos
+
+Las colecciones incluyen **scripts automáticos** que:
+
+1. **Guardan tokens** después del login
+2. **Guardan orderIds** después de crear órdenes
+3. **Validan respuestas** (status code 200)
+4. **Loguean resultados** en la consola de Postman
+
+### Ver Scripts
+
+En cualquier request:
+1. Click en el request
+2. Tab **Tests**
+3. Verás el código JavaScript
+
+---
+
+## 🎯 Testing de Pago Simulado
+
+### Endpoint Principal
+```
+POST /payments/confirm
+```
+
+### Body (Solo requiere orderId)
+```json
+{
+  "orderId": "{{orderId}}"
+}
+```
+
+### Respuesta Exitosa (95% casos)
+```json
+{
+  "success": true,
+  "paymentStatus": "PAID",
+  "transactionId": "txn_sim_abc123",
+  "simulation": true,
+  "notice": "✅ Pago procesado instantáneamente"
+}
+```
+
+### Respuesta Fallida (5% casos - testing)
+```json
+{
+  "success": false,
+  "paymentStatus": "FAILED",
+  "error": "Pago rechazado",
+  "simulation": true
+}
+```
+
+**💡 Recuerda:** Es 100% simulado. No se procesa ningún pago real.
+
+---
+
+## 🌐 WebSocket Testing
+
+Para probar WebSocket, usa una de estas opciones:
+
+### Opción 1: wscat (CLI)
 ```bash
-# 1. Listar repartidores existentes
-GET /api/delivery/drivers
-
-# 2. Crear un nuevo repartidor
-POST /api/delivery/drivers
-{
-  "tenantId": "TENANT#001",
-  "firstName": "Pedro",
-  "lastName": "Ramirez",
-  "email": "pedro@fridays.pe",
-  "password": "password123",
-  "phoneNumber": "+51989012345"
-}
-
-# 3. Ver repartidores disponibles
-GET /api/delivery/drivers/available
+npm install -g wscat
+wscat -c 'wss://YOUR-WS-ID.execute-api.us-east-1.amazonaws.com/dev?token=YOUR_TOKEN'
 ```
 
-### 2️⃣ Segundo: Admin Service
-
-```bash
-# 1. Ver dashboard
-GET /api/admin/dashboard
-
-# 2. Listar usuarios
-GET /api/admin/users
-
-# 3. Crear un cocinero
-POST /api/admin/users
-{
-  "tenantId": "TENANT#001",
-  "role": "COCINERO",
-  "firstName": "Miguel",
-  "lastName": "Fernandez",
-  "email": "miguel@fridays.pe",
-  "password": "password123",
-  "phoneNumber": "+51990123456"
-}
-
-# 4. Ver sedes
-GET /api/admin/sedes
-```
-
-### 3️⃣ Tercero: WebSocket (Requiere herramientas especiales)
-
-Para WebSocket necesitas usar:
-- **Postman WebSocket Request** (versión Desktop)
-- **wscat** (CLI): `npm install -g wscat`
-- **Cliente JavaScript** en el navegador
-
----
-
-## 🔐 Autenticación
-
-### Desarrollo Local (Mock Auth)
-En desarrollo local, la autenticación está en modo **mock**. Cualquier token funciona:
-
-```
-Authorization: Bearer mock-token-for-local-dev
-```
-
-El middleware `mock-auth` simula un usuario autenticado con estos datos:
+### Opción 2: Browser Console
 ```javascript
-{
-  userId: "mock-user-id",
-  email: "test@fridays.pe",
-  role: "ADMIN_SEDE",
-  tenantId: "TENANT#001"
-}
+const token = 'YOUR_JWT_TOKEN';
+const ws = new WebSocket(`wss://YOUR-WS-ID.execute-api.us-east-1.amazonaws.com/dev?token=${token}`);
+
+ws.onopen = () => console.log('✅ Conectado');
+ws.onmessage = (e) => console.log('📨', JSON.parse(e.data));
 ```
 
-### Producción (JWT Real)
-En AWS, necesitarás un JWT válido obtenido del servicio de autenticación.
+### Opción 3: Postman (v10+)
+1. New → WebSocket Request
+2. URL: `wss://YOUR-WS-ID.execute-api.us-east-1.amazonaws.com/dev?token={{token}}`
+3. Connect
 
 ---
 
-## 📋 Usuarios de Prueba (Seed Data)
+## 📊 Resumen de Endpoints
 
-Los siguientes usuarios están pre-cargados en DynamoDB local:
+| Servicio | Requests | Requiere Auth |
+|----------|----------|---------------|
+| E-Commerce | 26 | Parcial* |
+| Kitchen | 9 | ✅ Sí |
+| Delivery | 10 | ✅ Sí |
+| Admin | 15 | ✅ Sí |
+| WebSocket | Especial | ✅ Sí |
 
-| Email | Rol | Password | Sede |
-|-------|-----|----------|------|
-| leonardo@gmail.com | CLIENTE | password123 | - |
-| ana.digitador@fridays.pe | DIGITADOR | password123 | San Isidro |
-| carlos.chef@fridays.pe | CHEF_EJECUTIVO | password123 | San Isidro |
-| luis.cocinero@fridays.pe | COCINERO | password123 | San Isidro |
-| jose.empacador@fridays.pe | EMPACADOR | password123 | San Isidro |
-| maria.repartidor@fridays.pe | REPARTIDOR | password123 | San Isidro |
-| admin@fridays.pe | ADMIN_SEDE | password123 | San Isidro |
+*El menú público no requiere auth, el resto sí.
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Error: "Connection refused"
-```bash
-# Verifica que el servicio esté corriendo
-cd services/delivery-service
-npm run dev
-
-# Debe mostrar: "Server ready: http://localhost:3003 🚀"
+### ❌ Error: "Invalid token"
+**Solución:** Haz login de nuevo:
+```
+E-Commerce > AUTH > Login
 ```
 
-### Error: "ResourceNotFoundException"
-```bash
-# DynamoDB Local no está corriendo o no tiene tablas
-docker ps  # Verificar contenedor dynamodb-local
-
-# Si no está corriendo:
-npm run local:dynamodb
-npm run setup:tables
-npm run seed:data
+### ❌ Error: "Order not found"
+**Solución:** Crea una orden primero:
+```
+E-Commerce > ORDERS > Create Order
 ```
 
-### Error: 401 Unauthorized (en AWS)
-El token JWT no es válido o ha expirado. Obtén uno nuevo del servicio de autenticación.
+### ❌ Error: "Cannot connect to WebSocket"
+**Solución:** 
+1. Verifica que el servicio WebSocket esté desplegado
+2. Incluye el token en la URL: `?token=YOUR_TOKEN`
+3. Usa `wss://` (no `https://`)
+
+### ❌ Variables no se guardan
+**Solución:**
+1. Click en el ojo 👁️ (arriba derecha en Postman)
+2. Verifica que `token` y `orderId` tengan valores
+3. Si están vacías, corre Login/Create Order de nuevo
 
 ---
 
 ## 📚 Recursos Adicionales
 
-- **Documentación API:** Ver `../README.md`
-- **Schema de Base de Datos:** Ver `../DATABASE-SCHEMA.md`
-- **Setup de AWS:** Ver `../AWS-SETUP.md`
+- **Arquitectura:** Ver `ARCHITECTURE-AUDIT.md`
+- **Deployment:** Ver `DEPLOYMENT-GUIDE.md` y `deploy-all.sh`
+- **Payments:** Ver `PAYMENTS-SIMULATION.md` y `FRONTEND-PAYMENT-GUIDE.md`
+- **Cleanup:** Ver `CLEANUP-REPORT.md`
 
 ---
 
-## 🎯 Testing de Integración
+## ✅ Checklist de Testing
 
-### Flujo Completo: Crear Orden → Asignar → Entregar
+Antes de integrar con el frontend, verifica:
 
-1. **Crear un pedido** (desde ecommerce-service - TODO)
-2. **Asignar repartidor:**
-   ```
-   POST /api/delivery/orders/ORDER#001/assign
-   { "driverId": "user-uuid" }
-   ```
-3. **Actualizar a "En camino":**
-   ```
-   PUT /api/delivery/orders/ORDER#001/status
-   { "status": "DELIVERING", "location": {...} }
-   ```
-4. **Marcar como entregado:**
-   ```
-   PUT /api/delivery/orders/ORDER#001/status
-   { "status": "DELIVERED" }
-   ```
-5. **Ver en dashboard:**
-   ```
-   GET /api/admin/dashboard
-   GET /api/admin/orders/today
-   ```
+- [ ] ✅ Register funciona
+- [ ] ✅ Login devuelve token
+- [ ] ✅ Listar menú (público) funciona
+- [ ] ✅ Agregar al carrito funciona
+- [ ] ✅ Crear orden funciona
+- [ ] ✅ **Pago simulado funciona (1 click)**
+- [ ] ✅ Ver mis órdenes funciona
+- [ ] ✅ Cocina: Ver órdenes pendientes
+- [ ] ✅ Delivery: Asignar repartidor
+- [ ] ✅ Admin: Ver dashboard
 
 ---
 
-## 💡 Tips
+## 🎉 ¡Listo para Probar!
 
-1. **Usa Variables de Colección:** Los IDs de drivers/orders se guardan automáticamente en variables para usarlas en otros requests.
+1. Importa las 5 colecciones a Postman
+2. Actualiza las `baseUrl` después del deploy
+3. Sigue el flujo de testing recomendado
+4. Disfruta probando el backend completo
 
-2. **Tests Automatizados:** Cada request puede tener scripts de prueba en la pestaña "Tests".
-
-3. **Environments:** Crea un Environment para dev, staging y producción con diferentes URLs.
-
-4. **WebSocket Testing:** Para probar en tiempo real, mantén una conexión WebSocket abierta mientras haces requests al Delivery API.
-
----
-
-¿Preguntas? Revisa la documentación principal o contacta al equipo. 🚀
+**¿Dudas?** Revisa las descripciones dentro de cada request en Postman.

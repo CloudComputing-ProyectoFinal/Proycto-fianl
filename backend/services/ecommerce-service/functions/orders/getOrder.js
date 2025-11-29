@@ -1,49 +1,38 @@
-const AWS = require('aws-sdk');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
+/**
+ * Lambda: GET /orders/{orderId}
+ * Roles: CLIENTE (owner) / ADMIN_SEDE
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { getUserFromEvent, validateAccess } = require('../../shared/auth/jwt-utils');
+const { getItem } = require('../../shared/database/dynamodb-client');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, notFound, forbidden, serverError } = require('../../shared/utils/response');
+
 const ORDERS_TABLE = process.env.ORDERS_TABLE;
 
-async function getOrder(event) {
+module.exports.handler = async (event) => {
   try {
-    const { orderId } = event.pathParameters;
-    const user = event.requestContext.authorizer;
-
-    const result = await dynamodb.get({
-      TableName: ORDERS_TABLE,
-      Key: { orderId }
-    }).promise();
-
-    if (!result.Item) {
-      return {
-        statusCode: 404,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Orden no encontrada' })
-      };
+    const user = getUserFromEvent(event);
+    const orderId = event.pathParameters.orderId;
+    
+    const order = await getItem(ORDERS_TABLE, { orderId });
+    
+    if (!order) {
+      return notFound('Orden no encontrada');
     }
-
-    // Verificar que el usuario sea dueño de la orden
-    if (result.Item.userId !== user.userId && user.role !== 'ADMIN_SEDE') {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'No autorizado' })
-      };
+    
+    // Validar ownership o admin
+    if (user.role === USER_ROLES.CLIENTE && order.userId !== user.userId) {
+      return forbidden('No tienes permiso para ver esta orden');
     }
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: true, data: result.Item })
-    };
+    
+    if (user.role === USER_ROLES.ADMIN_SEDE && order.tenant_id !== user.tenant_id) {
+      return forbidden('No tienes permiso para ver esta orden');
+    }
+    
+    return success({ order });
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno' })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al obtener orden', error);
   }
-}
-
-module.exports.handler = mockAuth(getOrder);
+};

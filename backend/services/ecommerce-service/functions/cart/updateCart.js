@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
+const { mockAuth } = require('../../shared/middlewares/mock-auth');
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const CARTS_TABLE = process.env.CARTS_TABLE;

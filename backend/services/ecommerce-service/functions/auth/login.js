@@ -1,79 +1,84 @@
-const AWS = require('aws-sdk');
+/**
+ * Lambda: POST /auth/login
+ * Roles: PUBLIC (Cliente)
+ * 
+ * ⚠️ SEGURIDAD:
+ * - NO incluye credenciales hardcodeadas
+ * - Usa módulos compartidos (sin credenciales)
+ * - Valida contraseña con bcrypt
+ * - Genera JWT con tenant_id
+ */
+
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const { query } = require('../../shared/database/dynamodb-client');
+const { generateToken } = require('../../shared/auth/jwt-utils');
+const { success, badRequest, unauthorized, serverError } = require('../../shared/utils/response');
+const { validateEmail, validateRequiredFields } = require('../../shared/utils/validation');
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
 const USERS_TABLE = process.env.USERS_TABLE;
-const JWT_SECRET = process.env.JWT_SECRET;
 
-async function login(event) {
+module.exports.handler = async (event) => {
+  console.log('🔐 Login request');
+
   try {
-    const { email, password } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
 
-    if (!email || !password) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Email y contraseña requeridos' })
-      };
+    // Validar campos requeridos
+    validateRequiredFields(body, ['email', 'password']);
+
+    const { email, password } = body;
+
+    // Validar email
+    if (!validateEmail(email)) {
+      return badRequest('Email inválido');
     }
 
-    const result = await dynamodb.query({
-      TableName: USERS_TABLE,
-      IndexName: 'email-index',
-      KeyConditionExpression: 'email = :email',
-      ExpressionAttributeValues: { ':email': email }
-    }).promise();
-
-    if (result.Items.length === 0) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Credenciales inválidas' })
-      };
-    }
-
-    const user = result.Items[0];
-
-    const validPassword = await bcrypt.compare(password, user.passwordHash);
-    if (!validPassword) {
-      return {
-        statusCode: 401,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'Credenciales inválidas' })
-      };
-    }
-
-    const token = jwt.sign(
-      {
-        userId: user.userId,
-        email: user.email,
-        role: user.role,
-        tenantId: user.tenantId
-      },
-      JWT_SECRET,
-      { expiresIn: '24h' }
+    // Buscar usuario por email
+    const users = await query(
+      USERS_TABLE,
+      'email = :email',
+      { ':email': email },
+      'email-index'
     );
 
-    delete user.passwordHash;
+    if (!users || users.length === 0) {
+      return unauthorized('Credenciales inválidas');
+    }
 
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        token,
-        user
-      })
-    };
+    const user = users[0];
+
+    // Verificar si el usuario está activo
+    if (user.status !== 'ACTIVE') {
+      return unauthorized('Usuario inactivo');
+    }
+
+    // Verificar contraseña
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
+    if (!isPasswordValid) {
+      return unauthorized('Credenciales inválidas');
+    }
+
+    console.log(`✅ Login exitoso: ${user.userId} (${user.role})`);
+
+    // Generar token JWT con tenant_id
+    const token = await generateToken({
+      userId: user.userId,
+      email: user.email,
+      role: user.role,
+      tenant_id: user.tenant_id || null
+    });
+
+    // Respuesta sin la contraseña
+    const { passwordHash: _, ...userWithoutPassword } = user;
+
+    return success({
+      user: userWithoutPassword,
+      token
+    }, 'Login exitoso');
+
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno' })
-    };
+    console.error('❌ Login error:', error);
+    return serverError('Error al iniciar sesión', error);
   }
-}
-
-module.exports.handler = login;
+};

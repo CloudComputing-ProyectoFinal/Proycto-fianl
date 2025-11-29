@@ -1,53 +1,43 @@
-const AWS = require('aws-sdk');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
-const { USER_ROLES } = require('../../../../shared/constants/user-roles');
+/**
+ * Lambda: GET /admin/orders/today
+ * Roles: Admin Sede
+ * 
+ * Obtiene todas las órdenes del día actual para el tenant del usuario
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { getUserFromEvent, validateAccess } = require('../../shared/auth/jwt-utils');
+const { query } = require('../../shared/database/dynamodb-client');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, serverError } = require('../../shared/utils/response');
 
-const ORDERS_TABLE = process.env.ORDERS_TABLE;
+const ORDERS_TABLE = process.env.ORDERS_TABLE || 'Orders-dev';
 
-async function getOrdersToday(event) {
+module.exports.handler = async (event) => {
   try {
-    const user = event.requestContext.authorizer;
+    const user = getUserFromEvent(event);
+    validateAccess(user, [USER_ROLES.ADMIN_SEDE]);
 
-    // Solo ADMIN_SEDE puede ver todas las órdenes
-    if (user.role !== USER_ROLES.ADMIN_SEDE) {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'No tienes permisos' })
-      };
-    }
-
+    const tenant_id = user.tenant_id;
     const today = new Date().toISOString().split('T')[0];
     
-    const result = await dynamodb.query({
-      TableName: ORDERS_TABLE,
-      IndexName: 'tenantId-createdAt-index',
-      KeyConditionExpression: 'tenantId = :tenantId AND begins_with(createdAt, :today)',
-      ExpressionAttributeValues: {
-        ':tenantId': user.tenantId,
+    const orders = await query(
+      ORDERS_TABLE,
+      'tenant_id = :tenant_id AND begins_with(createdAt, :today)',
+      {
+        ':tenant_id': tenant_id,
         ':today': today
-      }
-    }).promise();
+      },
+      'tenant_id-createdAt-index'
+    );
 
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        data: result.Items
-      })
-    };
+    return success({
+      orders,
+      count: orders.length,
+      date: today
+    });
 
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno del servidor' })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al obtener órdenes de hoy', error);
   }
-}
-
-module.exports.handler = mockAuth(getOrdersToday);
+};

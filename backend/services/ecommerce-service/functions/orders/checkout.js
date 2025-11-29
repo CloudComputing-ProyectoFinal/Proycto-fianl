@@ -1,3 +1,15 @@
+/**
+ * Lambda: POST /orders (Checkout)
+ * Roles: Cliente
+ * 
+ * Flujo completo:
+ * 1. Validar carrito
+ * 2. Simular pago
+ * 3. Crear orden
+ * 4. Invocar Step Function para procesamiento
+ * 5. Vaciar carrito
+ */
+
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 
@@ -11,18 +23,49 @@ const dynamoConfig = process.env.STAGE === 'local'
   : {};
 
 const dynamodb = new AWS.DynamoDB.DocumentClient(dynamoConfig);
-const eventBridge = new AWS.EventBridge();
+const stepfunctions = new AWS.StepFunctions();
 
-const CARTS_TABLE = process.env.CARTS_TABLE || 'Carts-local';
-const ORDERS_TABLE = process.env.ORDERS_TABLE || 'Orders-local';
-const USERS_TABLE = process.env.USERS_TABLE || 'Users-local';
+const CARTS_TABLE = process.env.CARTS_TABLE || 'Carts-dev';
+const ORDERS_TABLE = process.env.ORDERS_TABLE || 'Orders-dev';
+const USERS_TABLE = process.env.USERS_TABLE || 'Users-dev';
+const STEP_FUNCTION_ARN = process.env.ORDER_PROCESSING_STATE_MACHINE_ARN;
+
+/**
+ * Simular procesamiento de pago (1-click payment)
+ */
+async function simulatePayment(orderId, amount, paymentMethod) {
+  console.log(`💳 Simulando pago para orden ${orderId}: ${amount} PEN via ${paymentMethod}`);
+  
+  // Simular delay de procesamiento (100ms)
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  // Simular éxito del pago (95% de éxito)
+  const success = Math.random() > 0.05;
+  
+  if (!success) {
+    throw new Error('Pago rechazado - Intente nuevamente');
+  }
+  
+  const transactionId = `TXN#${uuidv4().substring(0, 8).toUpperCase()}`;
+  
+  console.log(`✅ Pago exitoso - Transaction ID: ${transactionId}`);
+  
+  return {
+    success: true,
+    transactionId,
+    amount,
+    currency: 'PEN',
+    paymentMethod,
+    processedAt: new Date().toISOString()
+  };
+}
 
 async function checkout(event) {
   try {
     const userId = event.requestContext.authorizer.userId;
-    const { tenantId, deliveryAddress, paymentMethod, notes } = JSON.parse(event.body);
+    const { tenant_id, deliveryAddress, paymentMethod, notes } = JSON.parse(event.body);
 
-    if (!tenantId || !deliveryAddress) {
+    if (!tenant_id || !deliveryAddress) {
       return {
         statusCode: 400,
         headers: { 
@@ -31,7 +74,7 @@ async function checkout(event) {
         },
         body: JSON.stringify({
           success: false,
-          error: 'tenantId y deliveryAddress son requeridos'
+          error: 'tenant_id y deliveryAddress son requeridos'
         })
       };
     }
@@ -66,19 +109,44 @@ async function checkout(event) {
 
     const user = userResult.Item || {};
 
-    // Crear orden
+    // Preparar datos de la orden
     const orderId = `ORDER#${uuidv4()}`;
     const now = new Date().toISOString();
+    const deliveryFee = 5.00;
+    const totalAmount = cart.total + deliveryFee;
 
+    console.log(`📦 Procesando checkout para usuario ${userId}, total: ${totalAmount} PEN`);
+
+    // PASO 1: Simular pago (debe completarse antes de crear la orden)
+    let paymentResult;
+    try {
+      paymentResult = await simulatePayment(orderId, totalAmount, paymentMethod || 'CARD');
+    } catch (paymentError) {
+      console.error('❌ Error en el pago:', paymentError.message);
+      return {
+        statusCode: 402,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          success: false,
+          error: paymentError.message,
+          code: 'PAYMENT_FAILED'
+        })
+      };
+    }
+
+    // PASO 2: Crear orden con pago confirmado
     const order = {
       orderId,
       userId,
-      tenantId,
+      tenant_id,
       status: 'CREATED',
       items: cart.items,
       subtotal: cart.total,
-      deliveryFee: 5.00,
-      total: cart.total + 5.00,
+      deliveryFee,
+      total: totalAmount,
       currency: 'PEN',
       deliveryAddress: {
         ...deliveryAddress,
@@ -91,40 +159,66 @@ async function checkout(event) {
         phoneNumber: user.phoneNumber,
         email: user.email
       },
-      paymentMethod: paymentMethod || 'CASH',
-      paymentStatus: 'PENDING',
+      paymentMethod: paymentResult.paymentMethod,
+      paymentStatus: 'COMPLETED',
+      paymentDetails: {
+        transactionId: paymentResult.transactionId,
+        processedAt: paymentResult.processedAt
+      },
       notes: notes || null,
       createdAt: now,
       updatedAt: now
     };
 
-    // Guardar orden
+    // Guardar orden en DynamoDB
     await dynamodb.put({
       TableName: ORDERS_TABLE,
       Item: order
     }).promise();
 
-    // Vaciar carrito
+    console.log(`✅ Orden ${orderId} guardada exitosamente`);
+
+    // PASO 3: Vaciar carrito
     await dynamodb.delete({
       TableName: CARTS_TABLE,
       Key: { userId }
     }).promise();
 
-    // Emitir evento para Kitchen Service
-    await eventBridge.putEvents({
-      Entries: [{
-        Source: 'fridays.ecommerce',
-        DetailType: 'OrderCreated',
-        Detail: JSON.stringify({
+    console.log(`🗑️ Carrito vaciado para usuario ${userId}`);
+
+    // PASO 4: Invocar Step Function para procesamiento
+    if (STEP_FUNCTION_ARN) {
+      try {
+        const sfnInput = {
           orderId,
-          tenantId,
+          tenant_id,
           userId,
           items: order.items,
           total: order.total,
+          deliveryAddress: order.deliveryAddress,
           timestamp: now
-        })
-      }]
-    }).promise();
+        };
+
+        const execution = await stepfunctions.startExecution({
+          stateMachineArn: STEP_FUNCTION_ARN,
+          name: `order-${orderId}-${Date.now()}`,
+          input: JSON.stringify(sfnInput)
+        }).promise();
+
+        console.log(`🔄 Step Function iniciada: ${execution.executionArn}`);
+        
+        order.stepFunctionExecution = {
+          executionArn: execution.executionArn,
+          startDate: execution.startDate
+        };
+      } catch (sfnError) {
+        console.error('⚠️ Error al iniciar Step Function:', sfnError);
+        // No fallar la orden, solo registrar el error
+        order.stepFunctionError = sfnError.message;
+      }
+    } else {
+      console.log('⚠️ Step Function ARN no configurado, saltando procesamiento');
+    }
 
     return {
       statusCode: 201,
@@ -134,8 +228,16 @@ async function checkout(event) {
       },
       body: JSON.stringify({
         success: true,
-        message: 'Orden creada exitosamente',
-        data: order
+        message: 'Orden creada y pago procesado exitosamente',
+        data: {
+          order,
+          payment: {
+            status: 'COMPLETED',
+            transactionId: paymentResult.transactionId,
+            amount: totalAmount,
+            currency: 'PEN'
+          }
+        }
       })
     };
 

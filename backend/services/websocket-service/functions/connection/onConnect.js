@@ -1,38 +1,36 @@
-const AWS = require('aws-sdk');
+/**
+ * Lambda: WebSocket $connect
+ * Store connectionId with user info
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { verifyToken } = require('../../shared/auth/jwt-utils');
+const { putItem } = require('../../shared/database/dynamodb-client');
 
-const CONNECTIONS_TABLE = process.env.CONNECTIONS_TABLE;
+const WS_CONNECTIONS_TABLE = process.env.WS_CONNECTIONS_TABLE;
 
-async function onConnect(event) {
+module.exports.handler = async (event) => {
   try {
     const connectionId = event.requestContext.connectionId;
+    const token = event.queryStringParameters?.token;
     
-    // En producción, aquí validarías el token JWT del query string
-    // Por ahora, guardamos la conexión
-    const connection = {
+    if (!token) {
+      return { statusCode: 401, body: 'Unauthorized' };
+    }
+    
+    const decoded = await verifyToken(token);
+    
+    await putItem(WS_CONNECTIONS_TABLE, {
       connectionId,
-      connectedAt: new Date().toISOString(),
-      ttl: Math.floor(Date.now() / 1000) + (2 * 60 * 60) // 2 horas
-    };
-
-    await dynamodb.put({
-      TableName: CONNECTIONS_TABLE,
-      Item: connection
-    }).promise();
-
-    return {
-      statusCode: 200,
-      body: 'Connected'
-    };
-
+      userId: decoded.userId,
+      tenant_id: decoded.tenant_id || null,
+      connectedAt: new Date().toISOString()
+    });
+    
+    console.log(`✅ Connection stored: ${connectionId}`);
+    
+    return { statusCode: 200, body: 'Connected' };
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      body: 'Failed to connect'
-    };
+    console.error('❌ Error:', error);
+    return { statusCode: 500, body: 'Error' };
   }
-}
-
-module.exports.handler = onConnect;
+};

@@ -14,20 +14,20 @@ const PRODUCTS_TABLE = process.env.PRODUCTS_TABLE || 'Products-local';
 
 async function listProducts(event) {
   try {
-    const { tenantId, category, available } = event.queryStringParameters || {};
+    const { tenant_id, category, available } = event.queryStringParameters || {};
 
     let params = {
       TableName: PRODUCTS_TABLE
     };
 
-    // Si hay tenantId y category, usar el índice
-    if (tenantId && category) {
+    // Si hay tenant_id y category, usar el índice
+    if (tenant_id && category) {
       params = {
         TableName: PRODUCTS_TABLE,
-        IndexName: 'tenantId-category-index',
-        KeyConditionExpression: 'tenantId = :tenantId AND category = :category',
+        IndexName: 'tenant_id-category-index',
+        KeyConditionExpression: 'tenant_id = :tenant_id AND category = :category',
         ExpressionAttributeValues: {
-          ':tenantId': tenantId,
+          ':tenant_id': tenant_id,
           ':category': category
         }
       };

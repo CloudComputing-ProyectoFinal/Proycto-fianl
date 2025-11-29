@@ -1,66 +1,37 @@
-const AWS = require('aws-sdk');
+/**
+ * Lambda: GET /menu/items/{itemId}
+ * Roles: PUBLIC/CLIENTE
+ */
 
-const dynamoConfig = process.env.STAGE === 'local' 
-  ? {
-      region: 'us-east-1',
-      endpoint: 'http://localhost:8000',
-      accessKeyId: 'dummy',
-      secretAccessKey: 'dummy'
-    }
-  : {};
+const { getItem } = require('../../shared/database/dynamodb-client');
+const { success, badRequest, notFound, serverError } = require('../../shared/utils/response');
 
-const dynamodb = new AWS.DynamoDB.DocumentClient(dynamoConfig);
-const PRODUCTS_TABLE = process.env.PRODUCTS_TABLE || 'Products-local';
+const PRODUCTS_TABLE = process.env.PRODUCTS_TABLE;
 
-async function getProduct(event) {
+module.exports.handler = async (event) => {
   try {
-    const { productId } = event.pathParameters;
-
-    const result = await dynamodb.get({
-      TableName: PRODUCTS_TABLE,
-      Key: { productId }
-    }).promise();
-
-    if (!result.Item) {
-      return {
-        statusCode: 404,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          success: false,
-          error: 'Producto no encontrado'
-        })
-      };
+    // Soportar tanto query parameter (?id=) como path parameter (/items/{itemId})
+    let productId = event.queryStringParameters?.id || event.pathParameters?.itemId;
+    
+    if (!productId) {
+      return badRequest('Parámetro id requerido');
     }
-
-    return {
-      statusCode: 200,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        success: true,
-        data: result.Item
-      })
-    };
-
+    
+    // Decodificar URL (por si viene con %23 en lugar de #)
+    productId = decodeURIComponent(productId);
+    
+    console.log('🔍 Buscando producto:', productId);
+    
+    const product = await getItem(PRODUCTS_TABLE, { productId });
+    
+    if (!product) {
+      console.log('❌ Producto no encontrado:', productId);
+      return notFound('Producto no encontrado');
+    }
+    
+    return success({ product });
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        success: false,
-        error: 'Error al obtener producto'
-      })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al obtener producto', error);
   }
-}
-
-module.exports.handler = getProduct;
+};

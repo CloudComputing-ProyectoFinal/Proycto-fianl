@@ -1,9 +1,7 @@
 // Script para crear tablas de DynamoDB en AWS
 const AWS = require('aws-sdk');
 
-// Configurar AWS con el perfil fridays-dev
-const credentials = new AWS.SharedIniFileCredentials({ profile: 'fridays-dev' });
-AWS.config.credentials = credentials;
+// Configurar AWS - usa las credenciales del ambiente (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN)
 AWS.config.region = 'us-east-1';
 
 const dynamodb = new AWS.DynamoDB();

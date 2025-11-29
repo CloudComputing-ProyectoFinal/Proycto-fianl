@@ -1,57 +1,40 @@
-const AWS = require('aws-sdk');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
-const { USER_ROLES } = require('../../../../shared/constants/user-roles');
+/**
+ * Lambda: GET /admin/users
+ * Roles: Admin Sede
+ */
 
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const { getUserFromEvent, validateAccess } = require('../../shared/auth/jwt-utils');
+const { query } = require('../../shared/database/dynamodb-client');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
+const { success, forbidden, serverError } = require('../../shared/utils/response');
 
 const USERS_TABLE = process.env.USERS_TABLE;
 
-async function listUsers(event) {
+module.exports.handler = async (event) => {
   try {
-    const admin = event.requestContext.authorizer;
-
-    // Solo ADMIN_SEDE puede listar usuarios
-    if (admin.role !== USER_ROLES.ADMIN_SEDE) {
-      return {
-        statusCode: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ success: false, error: 'No tienes permisos' })
-      };
+    const user = getUserFromEvent(event);
+    validateAccess(user, [USER_ROLES.ADMIN_SEDE]);
+    
+    if (!user.tenant_id) {
+      return forbidden('tenant_id requerido');
     }
-
-    // Obtener usuarios del tenant
-    const result = await dynamodb.query({
-      TableName: USERS_TABLE,
-      IndexName: 'tenantId-role-index',
-      KeyConditionExpression: 'tenantId = :tenantId',
-      ExpressionAttributeValues: {
-        ':tenantId': admin.tenantId
-      }
-    }).promise();
-
-    // No retornar passwords
-    const users = result.Items.map(user => {
-      const { passwordHash, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+    
+    const users = await query(
+      USERS_TABLE,
+      'tenant_id = :tenant_id',
+      { ':tenant_id': user.tenant_id },
+      'tenant_id-role-index'
+    );
+    
+    // Remover passwords
+    const usersWithoutPassword = users.map(u => {
+      const { passwordHash, ...rest } = u;
+      return rest;
     });
-
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({
-        success: true,
-        data: users
-      })
-    };
-
+    
+    return success({ users: usersWithoutPassword });
   } catch (error) {
-    console.error('Error:', error);
-    return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      body: JSON.stringify({ success: false, error: 'Error interno del servidor' })
-    };
+    console.error('❌ Error:', error);
+    return serverError('Error al listar usuarios', error);
   }
-}
-
-module.exports.handler = mockAuth(listUsers);
+};

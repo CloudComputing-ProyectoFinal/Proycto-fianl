@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
-const { mockAuth } = require('../../../../shared/middlewares/mock-auth');
-const { USER_ROLES } = require('../../../../shared/constants/user-roles');
+const { mockAuth } = require('../../shared/middlewares/mock-auth');
+const { USER_ROLES } = require('../../shared/constants/user-roles');
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const ORDERS_TABLE = process.env.ORDERS_TABLE;
