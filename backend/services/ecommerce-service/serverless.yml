@@ -351,6 +351,10 @@ functions:
             name: authorizer
             type: REQUEST
 
+
+resources:
+  - ${file(resources/orders-table.yml)}
+
 plugins:
   - serverless-offline
 
