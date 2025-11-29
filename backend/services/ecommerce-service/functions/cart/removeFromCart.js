@@ -39,13 +39,13 @@ async function removeFromCart(event) {
 
     let cart = cartResult.Item;
 
-    // Filtrar el producto
-    cart.items = cart.items.filter(item => item.productId !== productId);
+  // Filtrar el producto
+  cart.items = cart.items.filter(item => item.productId !== productId);
 
-    // Recalcular totales
-    cart.total = cart.items.reduce((sum, item) => sum + item.subtotal, 0);
-    cart.itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-    cart.updatedAt = new Date().toISOString();
+  // Recalcular totales (manejar items sin subtotal)
+  cart.total = cart.items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+  cart.itemCount = cart.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  cart.updatedAt = new Date().toISOString();
 
     // Si el carrito está vacío, eliminarlo
     if (cart.items.length === 0) {
