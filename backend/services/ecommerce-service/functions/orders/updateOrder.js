@@ -53,7 +53,37 @@ exports.handler = async (event) => {
         }
       ]
     };
+
     await putItem(ORDERS_TABLE, updatedOrder);
+
+    // Publicar evento en EventBridge para notificación WebSocket
+    const eventBridge = new AWS.EventBridge();
+    try {
+      await eventBridge.putEvents({
+        Entries: [
+          {
+            Source: 'ecommerce-service.orders',
+            DetailType: 'OrderStatusChanged',
+            EventBusName: process.env.EVENT_BUS_NAME,
+            Detail: JSON.stringify({
+              orderId,
+              previousStatus: orderResult.status,
+              newStatus: status,
+              tenant_id: updatedOrder.tenant_id || null,
+              userId: updatedOrder.userId || null,
+              customerInfo: updatedOrder.customerInfo || null,
+              updatedBy,
+              driverInfo: updatedOrder.driverInfo || null,
+              location: updatedOrder.location || null,
+              timestamp: updatedOrder.updatedAt
+            })
+          }
+        ]
+      }).promise();
+      console.log('📡 Evento OrderStatusChanged publicado en EventBridge');
+    } catch (ebError) {
+      console.error('❌ Error al publicar evento en EventBridge:', ebError);
+    }
 
     // Publicar en SNS
     if (SNS_TOPIC_ARN) {

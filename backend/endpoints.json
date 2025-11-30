@@ -273,24 +273,24 @@
       ]
     },
     "websocket-service": {
-      "baseUrl": "https://yec3fbj985.execute-api.us-east-1.amazonaws.com/dev",
-      "wsUrl": "wss://9bymcj94u7.execute-api.us-east-1.amazonaws.com/dev",
+      "baseUrl": "https://9ag2cmvc8i.execute-api.us-east-1.amazonaws.com/dev",
+      "wsUrl": "wss://m4mwqz1lm5.execute-api.us-east-1.amazonaws.com/dev",
       "endpoints": [
         {
           "method": "POST",
-          "url": "https://yec3fbj985.execute-api.us-east-1.amazonaws.com/dev/ws/notify"
+          "url": "https://9ag2cmvc8i.execute-api.us-east-1.amazonaws.com/dev/ws/notify"
         },
         {
           "method": "GET",
-          "url": "https://yec3fbj985.execute-api.us-east-1.amazonaws.com/dev/ws/connections"
+          "url": "https://9ag2cmvc8i.execute-api.us-east-1.amazonaws.com/dev/ws/connections"
         },
         {
           "method": "GET",
-          "url": "https://yec3fbj985.execute-api.us-east-1.amazonaws.com/dev/ws/connections/{connectionId}"
+          "url": "https://9ag2cmvc8i.execute-api.us-east-1.amazonaws.com/dev/ws/connections/{connectionId}"
         },
         {
           "method": "DELETE",
-          "url": "https://yec3fbj985.execute-api.us-east-1.amazonaws.com/dev/ws/connections/{connectionId}"
+          "url": "https://9ag2cmvc8i.execute-api.us-east-1.amazonaws.com/dev/ws/connections/{connectionId}"
         }
       ]
     },

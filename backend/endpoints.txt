@@ -179,11 +179,11 @@ stage: dev
 region: us-east-1
 stack: fridays-websocket-service-dev
 endpoints:
-  POST - https://yec3fbj985.execute-api.us-east-1.amazonaws.com/dev/ws/notify
-  GET - https://yec3fbj985.execute-api.us-east-1.amazonaws.com/dev/ws/connections
-  GET - https://yec3fbj985.execute-api.us-east-1.amazonaws.com/dev/ws/connections/{connectionId}
-  DELETE - https://yec3fbj985.execute-api.us-east-1.amazonaws.com/dev/ws/connections/{connectionId}
-  wss://9bymcj94u7.execute-api.us-east-1.amazonaws.com/dev
+  POST - https://9ag2cmvc8i.execute-api.us-east-1.amazonaws.com/dev/ws/notify
+  GET - https://9ag2cmvc8i.execute-api.us-east-1.amazonaws.com/dev/ws/connections
+  GET - https://9ag2cmvc8i.execute-api.us-east-1.amazonaws.com/dev/ws/connections/{connectionId}
+  DELETE - https://9ag2cmvc8i.execute-api.us-east-1.amazonaws.com/dev/ws/connections/{connectionId}
+  wss://m4mwqz1lm5.execute-api.us-east-1.amazonaws.com/dev
 functions:
   authorizer: fridays-websocket-service-dev-authorizer
   onConnect: fridays-websocket-service-dev-onConnect
