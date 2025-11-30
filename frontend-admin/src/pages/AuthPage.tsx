@@ -48,9 +48,9 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
           </div>
 
           {isLogin ? (
-            <LoginForm onSwitchToRegister={() => setIsLogin(false)} />
+            <LoginForm />
           ) : (
-            <RegisterForm onSwitchToLogin={() => setIsLogin(true)} />
+            <RegisterForm />
           )}
 
           <div className="mt-6 text-center">
