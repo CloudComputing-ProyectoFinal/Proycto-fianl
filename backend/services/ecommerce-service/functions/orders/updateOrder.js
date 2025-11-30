@@ -24,12 +24,34 @@ exports.handler = async (event) => {
       return error('Orden no encontrada');
     }
 
+    // Obtener usuario que hace el cambio
+    const user = event.requestContext?.authorizer || {};
+    const updatedBy = {
+      email: user.email || '',
+      name: user.name || '',
+      role: user.role || '',
+      timestamp: new Date().toISOString()
+    };
+
     // Actualizar estado y otros campos
     const updatedOrder = {
       ...orderResult,
       status,
       ...updateFields,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
+      updatedBy,
+      // handler: responsable de la etapa actual
+      handler: updateFields.handler || updatedBy,
+      // historial de cambios
+      history: [
+        ...(orderResult.history || []),
+        {
+          status,
+          updatedBy,
+          handler: updateFields.handler || updatedBy,
+          timestamp: new Date().toISOString()
+        }
+      ]
     };
     await putItem(ORDERS_TABLE, updatedOrder);
 
@@ -45,6 +67,33 @@ exports.handler = async (event) => {
       } catch (snsError) {
         console.error('❌ Error al publicar en SNS:', snsError);
       }
+    }
+
+    // Si el estado es READY, iniciar Step Function de asignación automática de driver
+    if (status === 'READY') {
+      const stepfunctions = new AWS.StepFunctions();
+      const input = {
+        orderId,
+        tenant_id: updatedOrder.tenant_id,
+        sedeLocation: updatedOrder.sedeLocation // Asegúrate que este campo exista en la orden
+      };
+      try {
+        const params = {
+          stateMachineArn: process.env.ASSIGN_DRIVER_STEPFUNCTION_ARN,
+          input: JSON.stringify(input)
+        };
+        await stepfunctions.startExecution(params).promise();
+        console.log('🚚 Step Function de asignación de driver iniciada');
+      } catch (sfError) {
+        console.error('❌ Error al iniciar Step Function:', sfError);
+      }
+    }
+
+    // Si el estado es PACKED, puedes agregar lógica adicional aquí (notificación, integración, etc.)
+    if (status === 'PACKED') {
+      // Ejemplo: notificar al delivery que la orden está lista para recoger
+      // await sns.publish({ ... })
+      console.log('📦 Orden empaquetada, lista para el delivery');
     }
 
     return success({ message: 'Orden actualizada', order: updatedOrder });

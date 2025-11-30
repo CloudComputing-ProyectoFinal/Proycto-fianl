@@ -1,6 +1,25 @@
 === ENDPOINTS DE ecommerce-service ===
 
 === ENDPOINTS DE kitchen-service ===
+endpoints:
+  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/{chefId}
+  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs
+  PUT - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/{chefId}
+  DELETE - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/{chefId}
+  POST - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}/assign
+  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/created
+  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}
+  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders
+functions:
+  getChef: fridays-kitchen-service-dev-getChef (18 MB)
+  listChefs: fridays-kitchen-service-dev-listChefs (18 MB)
+  updateChef: fridays-kitchen-service-dev-updateChef (18 MB)
+  deleteChef: fridays-kitchen-service-dev-deleteChef (18 MB)
+  assignOrder: fridays-kitchen-service-dev-assignOrder (18 MB)
+  getCreatedOrders: fridays-kitchen-service-dev-getCreatedOrders (18 MB)
+  getKitchenOrder: fridays-kitchen-service-dev-getKitchenOrder (18 MB)
+  listKitchenOrders: fridays-kitchen-service-dev-listKitchenOrders (18 MB)
+  authorizer: fridays-kitchen-service-dev-authorizer (18 MB)
 
 === ENDPOINTS DE delivery-service ===
 

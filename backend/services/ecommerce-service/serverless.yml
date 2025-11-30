@@ -329,16 +329,6 @@ functions:
             name: authorizer
             type: REQUEST
 
-  updateOrder:
-    handler: functions/orders/updateOrder.handler
-    events:
-      - http:
-          path: /orders/{orderId}
-          method: PUT
-          cors: true
-          authorizer:
-            name: authorizer
-            type: REQUEST
 
   deleteOrder:
     handler: functions/orders/deleteOrder.handler
