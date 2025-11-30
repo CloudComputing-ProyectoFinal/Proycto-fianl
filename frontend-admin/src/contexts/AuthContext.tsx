@@ -93,20 +93,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('No tienes permisos para acceder a esta aplicación. Esta es solo para personal administrativo.');
       }
 
-      const userProfile: UserProfile = {
-        id: userFromServer.userId || userFromServer.id || '',
-        nombre: userFromServer.firstName || userFromServer.first_name || userFromServer.nombre || '',
-        apellido: userFromServer.lastName || userFromServer.last_name || userFromServer.apellido || '',
-        correo_electronico: userFromServer.email || userFromServer.correo_electronico || '',
-        celular: userFromServer.phoneNumber || userFromServer.phone || userFromServer.celular || '',
-        role: rawRole,
-        activo: (userFromServer.status ? userFromServer.status === 'ACTIVE' : (userFromServer.active ?? true)),
-        created_at: userFromServer.createdAt || userFromServer.created_at || new Date().toISOString(),
-        updated_at: userFromServer.updatedAt || userFromServer.updated_at || new Date().toISOString(),
-      } as UserProfile;
 
-      // incluir tenantId si existe
-      if (tenantId) (userProfile as any).tenantId = tenantId;
+      const userProfile: UserProfile = {
+        // canonical
+        userId: userFromServer.userId || userFromServer.id || '',
+        id: userFromServer.id || userFromServer.userId || undefined,
+        email: userFromServer.email || userFromServer.correo_electronico || '',
+        firstName: userFromServer.firstName || userFromServer.first_name || userFromServer.nombre || '',
+        lastName: userFromServer.lastName || userFromServer.last_name || userFromServer.apellido || '',
+        phoneNumber: userFromServer.phoneNumber || userFromServer.phone || userFromServer.celular || '',
+        address: userFromServer.address || userFromServer.direccion || undefined,
+        role: rawRole || '',
+        tenantId: tenantId || undefined,
+        tenant_id: (userFromServer.tenant_id || undefined) as string | undefined,
+        status: userFromServer.status || undefined,
+        active: userFromServer.status ? (userFromServer.status === 'ACTIVE') : (userFromServer.active ?? true),
+        createdAt: userFromServer.createdAt || userFromServer.created_at || new Date().toISOString(),
+        updatedAt: userFromServer.updatedAt || userFromServer.updated_at || new Date().toISOString(),
+
+        // legacy Spanish fields for compatibility
+        nombre: userFromServer.firstName || userFromServer.first_name || userFromServer.nombre || undefined,
+        apellido: userFromServer.lastName || userFromServer.last_name || userFromServer.apellido || undefined,
+        correo_electronico: userFromServer.email || userFromServer.correo_electronico || undefined,
+        celular: userFromServer.phoneNumber || userFromServer.phone || userFromServer.celular || undefined,
+        sede_id: userFromServer.sede_id || undefined,
+        activo: userFromServer.status ? (userFromServer.status === 'ACTIVE') : (userFromServer.active ?? true),
+      } as UserProfile;
 
       localStorage.setItem('user_profile', JSON.stringify(userProfile));
       setUser(userProfile);
