@@ -79,7 +79,7 @@ export function Navbar({ currentPage }: NavbarProps) {
             {profile ? (
               <ul className="flex space-x-10 uppercase font-semibold text-sm">
                 <li>
-                  <button onClick={() => navigate('/')} className={`px-2 py-1 ${currentPage === '' ? 'text-red-600' : 'text-black hover:text-red-600'}`}>
+                  <button onClick={() => navigate('/dashboard')} className={`px-2 py-1 ${currentPage === '' ? 'text-red-600' : 'text-black hover:text-red-600'}`}>
                     DASHBOARD
                   </button>
                 </li>

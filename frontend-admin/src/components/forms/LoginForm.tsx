@@ -25,9 +25,9 @@ export function LoginForm() {
 
       if (result?.error) throw result.error;
 
-      // Redirigir al dashboard (ruta raíz)
+      // Redirigir al dashboard
       setTimeout(() => {
-        navigate('/');
+        navigate('/dashboard');
       }, 100);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Error en autenticación';

@@ -85,11 +85,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Normalizar tenant id: tenant_id (snake_case) -> tenantId
       const tenantId = (userFromServer.tenantId || userFromServer.tenant_id || null) as string | null;
 
-      // Normalizar role: mantendremos el texto original pero también evaluaremos por exclusión (Cliente)
-      const rawRole = userFromServer.role || userFromServer.rol || '';
+      // Normalizar role: mapear varios labels del backend a roles canónicos usados por la UI
+      const rawRole = (userFromServer.role || userFromServer.rol || '').toString();
+
+      const normalizeRole = (r: string) => {
+        const low = r.toLowerCase();
+        if (/admin/i.test(r) || /administrador/i.test(low)) return 'ADMIN';
+        if (/chef|cheff|cocin/i.test(low)) return 'COOK';
+        if (/reparti|dispatch|despatc|empaca|empacador|empaqueta/i.test(low)) return 'DISPATCHER';
+        if (/cliente|user|usuario/i.test(low)) return 'USER';
+        return r.toUpperCase();
+      };
+
+      const canonicalRole = normalizeRole(rawRole);
 
       // Rechazar acceso a usuarios tipo Cliente
-      if (typeof rawRole === 'string' && /cliente/i.test(rawRole)) {
+      if (canonicalRole === 'USER') {
         throw new Error('No tienes permisos para acceder a esta aplicación. Esta es solo para personal administrativo.');
       }
 
@@ -103,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         lastName: userFromServer.lastName || userFromServer.last_name || userFromServer.apellido || '',
         phoneNumber: userFromServer.phoneNumber || userFromServer.phone || userFromServer.celular || '',
         address: userFromServer.address || userFromServer.direccion || undefined,
-        role: rawRole || '',
+        role: canonicalRole || '',
         tenantId: tenantId || undefined,
         tenant_id: (userFromServer.tenant_id || undefined) as string | undefined,
         status: userFromServer.status || undefined,
