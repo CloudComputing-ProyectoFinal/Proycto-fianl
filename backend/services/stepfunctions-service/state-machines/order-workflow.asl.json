@@ -1,5 +1,5 @@
 {
-  "Comment": "Order Workflow - Fridays Perú - Manual state changes via API",
+  "Comment": "Order Workflow - Fridays Perú - Completo",
   "StartAt": "NotifyOrderCreated",
   "States": {
     "NotifyOrderCreated": {
@@ -22,13 +22,20 @@
           }
         ]
       },
-      "End": true,
+           "Next": "SendOrderToSQS",
       "Catch": [
-        {
-          "ErrorEquals": ["States.ALL"],
-          "Next": "NotificationFailed"
-        }
+        { "ErrorEquals": ["States.ALL"], "Next": "NotificationFailed" }
       ]
+    },
+    "SendOrderToSQS": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage",
+      "Parameters": {
+        "QueueUrl": "https://sqs.us-east-1.amazonaws.com/085179068256/fridays-order-queue-dev.fifo",
+        "MessageBody.$": "$",
+        "MessageGroupId.$": "$.tenant_id"
+      },
+      "End": true
     },
     "NotificationFailed": {
       "Type": "Pass",

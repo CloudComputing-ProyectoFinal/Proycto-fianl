@@ -1,54 +1,6 @@
 === ENDPOINTS DE ecommerce-service ===
-endpoints:
-  POST - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/auth/register
-  POST - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/auth/login
-  POST - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/auth/refresh-token
-  POST - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/auth/logout
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/menu
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/menu/{category}
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/menu/product
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/menu/items/{itemId}
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/menu/search
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/menu/categories
-  POST - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders/{orderId}
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/users/orders
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders
-  PUT - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders/{orderId}/cancel
-  POST - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/cart/sync
-  GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/cart
-  DELETE - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/cart
-  PUT - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/cart
 
 === ENDPOINTS DE kitchen-service ===
-endpoints:
-  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/created
-  POST - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}/assign
-  PUT - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}
-  POST - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}/ready
-  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs
-  POST - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs
-  POST - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders
-  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders
-  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}
-  PUT - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}/status
-  GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/{chefId}
-  PUT - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/{chefId}
-  DELETE - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/{chefId}
-  POST - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/seed
-functions:
-  authorizer: fridays-kitchen-service-dev-authorizer (18 MB)
-  getCreatedOrders: fridays-kitchen-service-dev-getCreatedOrders (18 MB)
-  assignOrder: fridays-kitchen-service-dev-assignOrder (18 MB)
-  updateOrder: fridays-kitchen-service-dev-updateOrder (18 MB)
 
 === ENDPOINTS DE delivery-service ===
-
-=== ENDPOINTS DE admin-service ===
-
-=== ENDPOINTS DE websocket-service ===
-
-=== ENDPOINTS DE stepfunctions-service ===
-
-=== ENDPOINTS DE workers-service ===
 
