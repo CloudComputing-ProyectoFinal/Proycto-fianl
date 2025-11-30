@@ -89,10 +89,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const rawRole = (userFromServer.role || userFromServer.rol || '').toString();
 
       const normalizeRole = (r: string) => {
-        const low = r.toLowerCase();
-        if (/admin/i.test(r) || /administrador/i.test(low)) return 'ADMIN';
-        if (/chef|cheff|cocin/i.test(low)) return 'COOK';
-        if (/reparti|dispatch|despatc|empaca|empacador|empaqueta/i.test(low)) return 'DISPATCHER';
+        const low = r.toLowerCase().trim();
+        // Exact matches for known backend role strings
+        if (low === 'admin sede' || /admin/i.test(r) || /administrador/i.test(low)) return 'ADMIN';
+        if (low === 'cheff ejecutivo' || /chef|cheff|cocinero|cocin/i.test(low)) return 'COOK';
+        if (low === 'empacador' || low === 'repartidor' || /reparti|dispatch|despatc|empaca|empaqueta|empacador/i.test(low)) return 'DISPATCHER';
         if (/cliente|user|usuario/i.test(low)) return 'USER';
         return r.toUpperCase();
       };
