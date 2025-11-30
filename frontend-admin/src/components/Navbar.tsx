@@ -11,7 +11,7 @@ export function Navbar({ currentPage }: NavbarProps) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const profileName = (profile as any)?.nombre || (profile as any)?.name || (profile as any)?.correo_electronico || '';
+  const profileName = (profile as any)?.firstName || (profile as any)?.nombre || (profile as any)?.name || (profile as any)?.correo_electronico || '';
   const profileRole = String(((profile as any)?.role ?? '').toString().toUpperCase());
   const showMainMenu = !profile || profileRole === 'USER';
 
