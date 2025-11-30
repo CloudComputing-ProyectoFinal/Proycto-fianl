@@ -14,10 +14,27 @@ export function DashboardPage() {
   const [activeTab, setActiveTab] = useState('');
   const [adminSubTab, setAdminSubTab] = useState<'stats' | 'products' | 'orders' | 'users'>('stats');
 
+  // Debug: log lifecycle and state changes for dashboard
+  useEffect(() => {
+    console.log('[DashboardPage] mount');
+    return () => console.log('[DashboardPage] unmount');
+  }, []);
+
+  useEffect(() => {
+    console.log('[DashboardPage] profile changed', profile);
+  }, [profile]);
+
+  useEffect(() => {
+    console.log('[DashboardPage] activeTab ->', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    console.log('[DashboardPage] adminSubTab ->', adminSubTab);
+  }, [adminSubTab]);
   useEffect(() => {
     if (profile) {
       const role = profile.role?.toUpperCase() || '';
-      
+      console.log('[DashboardPage] resolving role redirect for', role);
       // Redirigir automáticamente según el rol
       if (role === 'ADMIN') {
         setActiveTab('admin');
@@ -75,7 +92,10 @@ export function DashboardPage() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex space-x-4 mb-6">
             <button
-              onClick={() => setActiveTab('admin')}
+              onClick={() => {
+                console.log('[DashboardPage] clicked main tab: admin');
+                setActiveTab('admin');
+              }}
               className={`px-6 py-2 rounded-lg font-medium transition-all ${
                 activeTab === 'admin'
                   ? 'bg-red-600 text-white'
@@ -85,7 +105,10 @@ export function DashboardPage() {
               Vista General
             </button>
             <button
-              onClick={() => setActiveTab('kitchen')}
+              onClick={() => {
+                console.log('[DashboardPage] clicked main tab: kitchen');
+                setActiveTab('kitchen');
+              }}
               className={`px-6 py-2 rounded-lg font-medium transition-all ${
                 activeTab === 'kitchen'
                   ? 'bg-red-600 text-white'
@@ -95,7 +118,10 @@ export function DashboardPage() {
               Cocina
             </button>
             <button
-              onClick={() => setActiveTab('delivery')}
+              onClick={() => {
+                console.log('[DashboardPage] clicked main tab: delivery');
+                setActiveTab('delivery');
+              }}
               className={`px-6 py-2 rounded-lg font-medium transition-all ${
                 activeTab === 'delivery'
                   ? 'bg-red-600 text-white'
@@ -121,16 +147,16 @@ export function DashboardPage() {
             {/* Admin sub-tabs: Stats / Products (rendered inside dashboard) */}
             <div className="bg-white p-4 rounded-lg shadow mb-4">
               <div className="flex space-x-3 flex-wrap">
-                <button onClick={() => setAdminSubTab('stats')} className={`px-4 py-2 rounded ${adminSubTab === 'stats' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
+                <button onClick={() => { console.log('[DashboardPage] adminSubTab click: stats'); setAdminSubTab('stats'); }} className={`px-4 py-2 rounded ${adminSubTab === 'stats' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
                   Estadísticas
                 </button>
-                <button onClick={() => setAdminSubTab('products')} className={`px-4 py-2 rounded ${adminSubTab === 'products' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
+                <button onClick={() => { console.log('[DashboardPage] adminSubTab click: products'); setAdminSubTab('products'); }} className={`px-4 py-2 rounded ${adminSubTab === 'products' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
                   Productos
                 </button>
-                <button onClick={() => setAdminSubTab('orders')} className={`px-4 py-2 rounded ${adminSubTab === 'orders' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
+                <button onClick={() => { console.log('[DashboardPage] adminSubTab click: orders'); setAdminSubTab('orders'); }} className={`px-4 py-2 rounded ${adminSubTab === 'orders' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
                   Órdenes
                 </button>
-                <button onClick={() => setAdminSubTab('users')} className={`px-4 py-2 rounded ${adminSubTab === 'users' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
+                <button onClick={() => { console.log('[DashboardPage] adminSubTab click: users'); setAdminSubTab('users'); }} className={`px-4 py-2 rounded ${adminSubTab === 'users' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
                   Usuarios
                 </button>
               </div>

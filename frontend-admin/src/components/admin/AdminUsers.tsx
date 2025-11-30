@@ -8,8 +8,10 @@ export function AdminUsers() {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      console.log('[AdminUsers] fetching users list...');
       try {
         const res = await adminService.listUsers();
+        console.log('[AdminUsers] fetch result:', res);
         const data = res?.data || res || [];
         if (mounted) setUsers(data);
       } catch (err) {
@@ -23,6 +25,7 @@ export function AdminUsers() {
 
   const changeRole = async (id: string, role: string) => {
     try {
+      console.log('[AdminUsers] changeRole', { id, role });
       await adminService.updateUserRole(id, role);
       setUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u));
     } catch (err) {

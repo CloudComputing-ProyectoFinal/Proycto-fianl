@@ -28,7 +28,12 @@ export interface AuthRegisterRequest {
 }
 
 export interface AuthResponse {
-    message: string;
-    token: string;
-    user: UserProfile;
+    message?: string;
+    token?: string;
+    user?: UserProfile;
+    data?: {
+        user?: UserProfile;
+        token?: string;
+        success?: boolean;
+    };
 }

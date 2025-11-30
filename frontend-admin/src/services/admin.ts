@@ -21,8 +21,8 @@ function getAuthHeaders(): HeadersInit | undefined {
   return token ? { Authorization: `Bearer ${token}` } : undefined;
 }
 
-// Prefer explicit base vars; fall back to older names if needed
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL_COMIDA || import.meta.env.VITE_API_URL || '';
+// Admin service uses dedicated admin API Gateway
+const API_BASE = import.meta.env.VITE_API_URL_ADMIN || '';
 
 async function handleResponse(res: Response) {
   if (!res.ok) {
@@ -39,7 +39,18 @@ export async function fetchDashboard() {
 
 export async function listProducts(page = 1, perPage = 20) {
   const res = await fetch(`${API_BASE}/admin/products?page=${page}&per_page=${perPage}`, { headers: getAuthHeaders() });
-  return handleResponse(res);
+  const json = await handleResponse(res);
+
+  // Expected shapes:
+  // { success, message, data: { products: [...], count, tenant_id } }
+  // or directly { products: [...], count }
+  const data = json && typeof json === 'object' ? (json.data ?? json) : json;
+
+  return {
+    products: data.products ?? data.items ?? [],
+    count: data.count ?? undefined,
+    tenant_id: data.tenant_id ?? data.tenantId ?? undefined,
+  };
 }
 
 export async function getProduct(id: string) {
@@ -93,13 +104,45 @@ export async function createProduct(payload: CreateProductPayload): Promise<Crea
   return { product: json } as CreatedProductResult;
 }
 
-export async function updateProduct(id: string, payload: any) {
-  const res = await fetch(`${API_BASE}/admin/products/${id}`, {
+export type UpdateProductPayload = {
+  name?: string;
+  description?: string;
+  category?: string;
+  price?: number;
+  currency?: string;
+  preparationTimeMinutes?: number;
+  isAvailable?: boolean;
+  tags?: string[];
+  imageUrl?: string;
+};
+
+export type UpdatedProductResult = {
+  product: any;
+  message?: string;
+};
+
+export async function updateProduct(id: string, payload: UpdateProductPayload): Promise<UpdatedProductResult> {
+  // Encode # as %23 in productId for URL safety
+  const encodedId = id.replace(/#/g, '%23');
+  
+  const res = await fetch(`${API_BASE}/admin/products/${encodedId}`, {
     method: 'PUT',
     headers: { ...(getAuthHeaders() ?? {}), 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  return handleResponse(res);
+
+  const json = await handleResponse(res);
+
+  // Response shape: { success, message, data: { product: {...}, message: '...' } }
+  if (json && typeof json === 'object') {
+    const data = json.data ?? json;
+    return {
+      product: data.product ?? json,
+      message: data.message ?? json.message ?? undefined,
+    } as UpdatedProductResult;
+  }
+
+  return { product: json } as UpdatedProductResult;
 }
 
 export async function deleteProduct(id: string) {
@@ -148,4 +191,5 @@ export default {
   listOrders,
   updateOrderStatus,
   listUsers,
+  updateUserRole,
 };

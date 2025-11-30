@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchFood, fetchFoodByCategory, createProduct, updateProduct, toggleProductAvailability } from '../../services/food';
+import adminService from '../../services/admin';
 import type { ProductApi } from '../../lib/menu.types';
 
 export function AdminProducts() {
@@ -23,8 +23,29 @@ export function AdminProducts() {
   const loadProducts = async (cat?: string) => {
     setLoading(true);
     try {
-      const res = cat && cat !== 'ALL' ? await fetchFoodByCategory(cat) : await fetchFood();
-      setProducts(res.products || []);
+      console.log('[AdminProducts] loadProducts start', { category: cat });
+      // Use admin endpoint to list products
+      const res = await adminService.listProducts();
+      console.log('[AdminProducts] loadProducts result', res);
+
+      const items = res?.products ?? [];
+      // Normalize backend product shape to ProductApi expected by UI
+      const normalized = items.map((p: any) => ({
+        imageUrl: p.imageUrl ?? p.image_url ?? '',
+        available: (p.isAvailable !== undefined) ? p.isAvailable : (p.available ?? false),
+        updatedAt: p.updatedAt ?? p.updated_at ?? '',
+        tenantId: p.tenant_id ?? p.tenantId ?? '',
+        category: p.category ?? '',
+        createdAt: p.createdAt ?? p.created_at ?? '',
+        price: p.price ?? 0,
+        description: p.description ?? '',
+        ingredients: p.ingredients ?? [],
+        name: p.name ?? '',
+        preparationTime: p.preparationTimeMinutes ?? p.preparationTime ?? 0,
+        productId: p.productId ?? p.product_id ?? p.id ?? '',
+      })) as ProductApi[];
+
+      setProducts(normalized);
     } catch (err) {
       console.error('loadProducts', err);
     } finally {
@@ -37,6 +58,7 @@ export function AdminProducts() {
   }, [category]);
 
   const openCreateModal = () => {
+    console.log('[AdminProducts] openCreateModal');
     setEditingProduct(null);
     setFormData({
       name: '',
@@ -53,6 +75,7 @@ export function AdminProducts() {
   };
 
   const openEditModal = (product: ProductApi) => {
+    console.log('[AdminProducts] openEditModal', product.productId);
     setEditingProduct(product);
     setFormData({
       name: product.name,
@@ -71,9 +94,10 @@ export function AdminProducts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log('[AdminProducts] handleSubmit', { editing: !!editingProduct, formData });
       if (editingProduct) {
-        // Editar
-        await updateProduct(editingProduct.productId, {
+        // Editar via admin service
+        await adminService.updateProduct(editingProduct.productId, {
           name: formData.name,
           price: formData.price,
           description: formData.description,
@@ -83,8 +107,9 @@ export function AdminProducts() {
           tags: formData.tags,
         });
       } else {
-        // Crear
-        await createProduct(formData);
+        // Crear via admin service
+        const created = await adminService.createProduct(formData as any);
+        console.log('[AdminProducts] create result', created);
       }
       setShowModal(false);
       loadProducts(category);
@@ -96,7 +121,9 @@ export function AdminProducts() {
 
   const handleToggleAvailability = async (product: ProductApi) => {
     try {
-      await toggleProductAvailability(product.productId, !product.available);
+      console.log('[AdminProducts] toggleAvailability', product.productId, !product.available);
+      // Use admin update endpoint to toggle availability
+      await adminService.updateProduct(product.productId, { isAvailable: !product.available });
       setProducts(prev => prev.map(p => 
         p.productId === product.productId ? { ...p, available: !p.available } : p
       ));

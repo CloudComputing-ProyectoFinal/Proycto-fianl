@@ -26,6 +26,19 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const { onMessage, onError, onOpen, onClose, autoConnect = true } = options;
 
+  // Respect env flag to disable websockets entirely and avoid console output
+  const DISABLE_WS = (import.meta.env.VITE_DISABLE_WEBSOCKETS === 'true' || import.meta.env.VITE_DISABLE_WEBSOCKETS === '1');
+  if (DISABLE_WS) {
+    // no-op implementations; keep hook shape but do not connect or log
+    return {
+      isConnected: false,
+      lastMessage: null,
+      connect: () => {},
+      disconnect: () => {},
+      sendMessage: () => {},
+    };
+  }
+
   const connect = useCallback(() => {
     if (!user || !profile) {
       console.log('❌ No user logged in, skipping WebSocket connection');

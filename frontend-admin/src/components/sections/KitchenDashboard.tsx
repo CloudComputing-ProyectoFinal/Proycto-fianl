@@ -14,6 +14,11 @@ export function KitchenDashboard() {
   const [orders] = useState<Order[]>([]);
   const [loading] = useState(false);
 
+  useEffect(() => {
+    console.log('[KitchenDashboard] mount', { user });
+    return () => console.log('[KitchenDashboard] unmount');
+  }, [user]);
+
   // TODO: Integrar con GET /kitchen/orders del backend AWS Lambda
   const handleStartCooking = async (orderId: string) => {
     // TODO: PUT a /kitchen/orders/{id}/start del backend AWS Lambda

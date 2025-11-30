@@ -8,8 +8,10 @@ export function AdminStats() {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      console.log('[AdminStats] fetching dashboard stats...');
       try {
         const res = await adminService.fetchDashboard();
+        console.log('[AdminStats] fetch result:', res);
         if (mounted) setData(res);
       } catch (err) {
         console.error('fetchDashboard', err);

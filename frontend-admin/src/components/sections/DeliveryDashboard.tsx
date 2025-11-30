@@ -18,6 +18,11 @@ export function DeliveryDashboard() {
   const [orders] = useState<Order[]>([]);
   const [loading] = useState(false);
 
+  useEffect(() => {
+    console.log('[DeliveryDashboard] mount', { user });
+    return () => console.log('[DeliveryDashboard] unmount');
+  }, [user]);
+
   // TODO: Integrar con GET /delivery/orders del backend AWS Lambda
   const handleMarkReady = async (orderId: string) => {
     // TODO: PUT a /delivery/orders/{id}/package del backend AWS Lambda
