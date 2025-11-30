@@ -1,7 +1,12 @@
 {
   "Comment": "Order Workflow - Fridays Perú - Completo",
-  "StartAt": "NotifyOrderCreated",
+  "StartAt": "SaveOrderInput",
   "States": {
+    "SaveOrderInput": {
+      "Type": "Pass",
+      "ResultPath": "$.orderInput",
+      "Next": "NotifyOrderCreated"
+    },
     "NotifyOrderCreated": {
       "Type": "Task",
       "Resource": "arn:aws:states:::events:putEvents",
@@ -22,7 +27,8 @@
           }
         ]
       },
-           "Next": "SendOrderToSQS",
+      "ResultPath": "$.notifyResult",
+      "Next": "SendOrderToSQS",
       "Catch": [
         { "ErrorEquals": ["States.ALL"], "Next": "NotificationFailed" }
       ]
@@ -32,8 +38,8 @@
       "Resource": "arn:aws:states:::sqs:sendMessage",
       "Parameters": {
         "QueueUrl": "https://sqs.us-east-1.amazonaws.com/085179068256/fridays-order-queue-dev.fifo",
-        "MessageBody.$": "$",
-        "MessageGroupId.$": "$.tenant_id"
+        "MessageBody.$": "$.orderInput",
+        "MessageGroupId.$": "$.orderInput.tenant_id"
       },
       "End": true
     },
