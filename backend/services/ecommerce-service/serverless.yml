@@ -30,6 +30,10 @@ provider:
     SQS_ORDER_QUEUE_URL: https://sqs.us-east-1.amazonaws.com/085179068256/fridays-order-queue-${self:provider.stage}.fifo
 
     SNS_NOTIFICATIONS_TOPIC_ARN: arn:aws:sns:us-east-1:085179068256:fridays-notifications-${self:provider.stage}
+    
+    # SendGrid para emails estilizados al cliente (mejor que SES para AWS Academy)
+    SENDGRID_API_KEY: ${ssm:/fridays/sendgrid-api-key~true}
+    SENDGRID_FROM_EMAIL: ${ssm:/fridays/sendgrid-from-email~true}
 
 # Configurar empaquetado para incluir shared
 package:

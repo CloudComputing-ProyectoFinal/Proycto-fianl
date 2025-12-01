@@ -1,6 +1,7 @@
 const { success, badRequest, unauthorized, serverError } = require('../../shared/utils/response');
 const { getItem, putItem, query, scan, updateItem, deleteItem } = require('../../shared/database/dynamodb-client');
 const { validateOwnership, validateTenantAccess } = require('../../shared/utils/validation');
+const { sendOrderStatusEmail } = require('../../shared/utils/sendgrid-client'); // ⚡ Cambiado a SendGrid
 const AWS = require('aws-sdk');
 const sns = new AWS.SNS();
 const SNS_TOPIC_ARN = process.env.SNS_NOTIFICATIONS_TOPIC_ARN;
@@ -125,15 +126,43 @@ exports.handler = async (event) => {
       console.error('❌ Error al publicar evento en EventBridge:', ebError);
     }
 
-    // Publicar en SNS
+    // ========================================
+    // NOTIFICACIONES POR EMAIL
+    // ========================================
+    
+    // 1. Email al CLIENTE con Amazon SES (HTML estilizado)
+    try {
+      const driverInfo = updatedOrder.driver_name ? {
+        name: updatedOrder.driver_name,
+        id: updatedOrder.driver_id
+      } : null;
+      
+      await sendOrderStatusEmail(updatedOrder, driverInfo);
+      console.log('📧 Email SES enviado al cliente:', updatedOrder.customerInfo?.email);
+    } catch (sesError) {
+      console.error('❌ Error al enviar email con SES:', sesError.message);
+      // No fallar la operación si el email falla
+    }
+
+    // 2. Notificación ADMIN con SNS (texto simple)
     if (SNS_TOPIC_ARN) {
       try {
         await sns.publish({
           TopicArn: SNS_TOPIC_ARN,
-          Subject: `Estado de orden actualizado: ${orderId}`,
-          Message: `La orden ${orderId} cambió a estado: ${status}\n\n${JSON.stringify(updatedOrder, null, 2)}`
+          Subject: `[ADMIN] Orden ${orderId} → ${status}`,
+          Message: `🔔 NOTIFICACIÓN ADMINISTRATIVA\n\n` +
+                   `Orden: ${orderId}\n` +
+                   `Estado anterior: ${orderResult.status}\n` +
+                   `Estado nuevo: ${status}\n` +
+                   `Cliente: ${updatedOrder.customerInfo?.firstName} ${updatedOrder.customerInfo?.lastName}\n` +
+                   `Email: ${updatedOrder.customerInfo?.email}\n` +
+                   `Total: S/ ${updatedOrder.total}\n` +
+                   `Actualizado por: ${updatedBy.email} (${updatedBy.role})\n` +
+                   `Timestamp: ${updatedOrder.updatedAt}\n\n` +
+                   `Driver asignado: ${updatedOrder.driver_name || 'N/A'}\n` +
+                   `Tenant: ${updatedOrder.tenant_id}`
         }).promise();
-        console.log('📧 Notificación SNS enviada');
+        console.log('📧 Notificación SNS enviada a admins');
       } catch (snsError) {
         console.error('❌ Error al publicar en SNS:', snsError);
       }

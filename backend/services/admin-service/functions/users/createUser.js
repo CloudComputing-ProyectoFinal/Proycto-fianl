@@ -82,21 +82,38 @@ module.exports.handler = async (event) => {
     };
 
     await putItem(USERS_TABLE, newUser);
+    console.log('✅ Usuario creado en Users table:', newUser.userId);
 
     // Si el rol es REPARTIDOR, crear también en la tabla de drivers
     if (body.role === USER_ROLES.REPARTIDOR) {
       const DRIVERS_TABLE = process.env.DRIVERS_TABLE;
+      
+      console.log('🚚 Creando driver para repartidor:', {
+        userId: newUser.userId,
+        role: body.role,
+        driversTable: DRIVERS_TABLE
+      });
+      
       const driver = {
-        driverId: uuidv4(),
+        driverId: newUser.userId, // IMPORTANTE: usar userId como driverId para consistencia
         userId: newUser.userId,
         name: `${firstName} ${lastName}`,
         vehicleType: body.vehicleType || 'moto',
         tenant_id: targetTenantId,
         isAvailable: true,
         currentDeliveries: 0,
-        createdAt: timestamp
+        createdAt: timestamp,
+        updatedAt: timestamp
       };
-      await putItem(DRIVERS_TABLE, driver);
+      
+      try {
+        await putItem(DRIVERS_TABLE, driver);
+        console.log('✅ Driver creado exitosamente en Drivers table:', driver.driverId);
+      } catch (driverError) {
+        console.error('❌ Error creando driver:', driverError);
+        // No lanzar el error para que al menos el usuario se cree
+        // pero log del problema para debugging
+      }
     }
 
     // Si el rol es CHEF_EJECUTIVO o COCINERO, crear también en la tabla de cocineros (Cooks)
