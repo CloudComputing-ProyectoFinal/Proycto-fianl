@@ -95,7 +95,7 @@ async function deleteItem(tableName, key) {
 /**
  * Query items with condition
  */
-async function query(tableName, keyConditionExpression, expressionValues, indexName = null, limit = null) {
+async function query(tableName, keyConditionExpression, expressionValues, indexName = null, limit = null, expressionNames = {}) {
   try {
     const params = {
       TableName: tableName,

@@ -11,7 +11,7 @@ const AWS = require('aws-sdk');
 
 // Cliente DynamoDB usa IAM Role automáticamente
 const dynamodb = new AWS.DynamoDB.DocumentClient({
-  region: process.env.REGION || process.env.AWS_REGION || 'us-east-1'
+  region: process.env.AWS_REGION || 'us-east-1'
 });
 
 /**
@@ -102,15 +102,15 @@ async function query(tableName, keyConditionExpression, expressionValues, indexN
       KeyConditionExpression: keyConditionExpression,
       ExpressionAttributeValues: expressionValues
     };
+
     if (indexName) {
       params.IndexName = indexName;
     }
+
     if (limit) {
       params.Limit = limit;
     }
-    if (expressionNames && Object.keys(expressionNames).length > 0) {
-      params.ExpressionAttributeNames = expressionNames;
-    }
+
     const result = await dynamodb.query(params).promise();
     return result.Items;
   } catch (error) {
@@ -122,7 +122,7 @@ async function query(tableName, keyConditionExpression, expressionValues, indexN
 /**
  * Scan table (use with caution)
  */
-async function scan(tableName, filterExpression = null, expressionValues = {}, limit = null, expressionNames = {}) {
+async function scan(tableName, filterExpression = null, expressionValues = {}, limit = null) {
   try {
     const params = {
       TableName: tableName
@@ -132,9 +132,6 @@ async function scan(tableName, filterExpression = null, expressionValues = {}, l
       params.FilterExpression = filterExpression;
       params.ExpressionAttributeValues = expressionValues;
       
-      if (Object.keys(expressionNames).length > 0) {
-        params.ExpressionAttributeNames = expressionNames;
-      }
     }
 
     if (limit) {

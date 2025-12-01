@@ -20,27 +20,32 @@ module.exports.handler = async (event) => {
     }
     
     const COOKS_TABLE = process.env.COOKS_TABLE || 'Cooks-dev';
-    // Permitir filtrar por rol desde query params, por defecto CHEF_EJECUTIVO
+    
+    // Permitir filtrar por rol desde query params (opcional)
     const queryParams = event.queryStringParameters || {};
-      let roleFilter = queryParams.role;
-      if (roleFilter) {
-        if (roleFilter.toLowerCase() === 'cocinero') roleFilter = 'Cocinero';
-        if (roleFilter.toLowerCase() === 'chef_ejecutivo' || roleFilter.toLowerCase() === 'chefejecutivo') roleFilter = 'Chef Ejecutivo';
-      }
+    let roleFilter = queryParams.role;
+    
+    if (roleFilter) {
+      // Normalizar el valor del filtro
+      if (roleFilter.toLowerCase() === 'cocinero') roleFilter = 'Cocinero';
+      if (roleFilter.toLowerCase() === 'chef_ejecutivo' || roleFilter.toLowerCase() === 'chefejecutivo' || roleFilter.toLowerCase() === 'cheff ejecutivo') roleFilter = 'Cheff Ejecutivo';
+    }
 
     // Buscar por tenant_id en la tabla Cooks
     const cooksRaw = await query(
       COOKS_TABLE,
       'tenant_id = :tenant_id',
       { ':tenant_id': user.tenant_id },
-      'tenant-index'
+      'tenant-index',
+      null
     );
 
     let cooks;
     if (!roleFilter || roleFilter === 'ALL') {
-      // Mostrar ambos roles
-        cooks = cooksRaw.filter(c => c.role === 'Chef Ejecutivo' || c.role === 'Cocinero');
+      // Sin filtro: mostrar AMBOS roles (Cocinero y Cheff Ejecutivo)
+      cooks = cooksRaw.filter(c => c.role === 'Cocinero' || c.role === 'Cheff Ejecutivo');
     } else {
+      // Con filtro: mostrar solo el rol especificado
       cooks = cooksRaw.filter(c => c.role === roleFilter);
     }
 

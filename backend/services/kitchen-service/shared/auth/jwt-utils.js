@@ -3,30 +3,37 @@
  * 
  * ⚠️ SEGURIDAD:
  * - NO incluye credenciales hardcodeadas
- * - Usa AWS Systems Manager Parameter Store para secretos
+ * - Usa variables de entorno o AWS Systems Manager Parameter Store para secretos
  * - Compatible con AWS Academy (roles rotativos)
  */
 
 const jwt = require('jsonwebtoken');
-const { getParameter } = require('../utils/parameter-store');
 
 let cachedSecret = null;
 
 /**
- * Obtener JWT_SECRET desde Parameter Store (con cache)
+ * Obtener JWT_SECRET desde env o Parameter Store (con cache)
  */
 async function getJwtSecret() {
   if (cachedSecret) {
     return cachedSecret;
   }
 
+  // Prioridad 1: Variable de entorno (más rápido)
+  if (process.env.JWT_SECRET) {
+    cachedSecret = process.env.JWT_SECRET;
+    return cachedSecret;
+  }
+
+  // Prioridad 2: Parameter Store (requiere aws-sdk)
   try {
+    const { getParameter } = require('../utils/parameter-store');
     cachedSecret = await getParameter('/fridays/jwt-secret', true);
     return cachedSecret;
   } catch (error) {
     console.error('⚠️ No se pudo obtener JWT_SECRET de Parameter Store, usando fallback');
     // Fallback solo para desarrollo local
-    return process.env.JWT_SECRET || 'dev-secret-key-fridays-2025';
+    return process.env.JWT_SECRET || 'your-256-bit-secret';
   }
 }
 

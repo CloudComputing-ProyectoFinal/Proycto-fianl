@@ -34,6 +34,7 @@ exports.handler = async (event) => {
 
     // Obtener usuario que hace el cambio
     const user = event.requestContext?.authorizer || {};
+    
     // Validación: solo el cocinero asignado puede cambiar de CREATED a COOKING
     if (
       orderResult.status === 'CREATED' &&
@@ -44,6 +45,16 @@ exports.handler = async (event) => {
       const requesterId = user.userId || user.cookId || user.cook_id;
       if (!assignedCookId || assignedCookId !== requesterId) {
         return unauthorized('Solo el cocinero asignado puede iniciar la preparación de la orden');
+      }
+    }
+
+    // Validación: solo el driver asignado puede cambiar el estado de su orden asignada
+    if (orderResult.driver_id && user.role === 'Repartidor') {
+      const assignedDriverId = orderResult.driver_id || orderResult.driverId;
+      const requesterId = user.userId || user.driver_id || user.driverId;
+      
+      if (!assignedDriverId || assignedDriverId !== requesterId) {
+        return unauthorized('Solo el repartidor asignado puede actualizar esta orden');
       }
     }
 
@@ -148,6 +159,34 @@ exports.handler = async (event) => {
       // Ejemplo: notificar al delivery que la orden está lista para recoger
       // await sns.publish({ ... })
       console.log('📦 Orden empaquetada, lista para el delivery');
+    }
+
+    // Si el estado es DELIVERED, liberar al driver (actualización bidireccional)
+    if (status === 'DELIVERED' && updatedOrder.driver_id) {
+      console.log('🎯 Orden entregada, liberando driver:', updatedOrder.driver_id);
+      
+      try {
+        const DRIVERS_TABLE = process.env.DRIVERS_TABLE || 'Drivers-dev';
+        
+        // Liberar al driver: limpiar current_order_id y marcarlo como disponible
+        // IMPORTANTE: La clave primaria de Drivers es driverId (no driver_id)
+        await updateItem(
+          DRIVERS_TABLE,
+          { driverId: updatedOrder.driver_id },
+          'SET current_order_id = :null, isAvailable = :available, updated_at = :timestamp',
+          {
+            ':null': null, // Limpiar orden actual
+            ':available': true, // Ahora está disponible
+            ':timestamp': new Date().toISOString()
+          }
+        );
+        
+        console.log('✅ Driver liberado exitosamente');
+      } catch (driverError) {
+        console.error('❌ Error al liberar driver:', driverError);
+        // No fallar la actualización de la orden si falla la liberación del driver
+        // El sistema puede reconciliar esto después
+      }
     }
 
     return success({ message: 'Orden actualizada', order: updatedOrder });

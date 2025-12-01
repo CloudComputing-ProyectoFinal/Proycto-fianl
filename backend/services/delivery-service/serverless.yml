@@ -72,6 +72,10 @@ functions:
             name: authorizer
             type: REQUEST
 
+  # Función para Step Function - Asignación automática de driver
+  assignDriverToOrder:
+    handler: functions/orders/assignDriverToOrder.handler
+
   listOrders:
     handler: functions/orders/listOrders.handler
     events:
