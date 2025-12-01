@@ -23,6 +23,27 @@ export type DashboardStats = {
   revenue: number;
 };
 
+export interface Driver {
+  driverId: string;
+  userId: string;
+  tenant_id: string;
+  name: string;
+  vehicleType: string;
+  isAvailable: boolean;
+  currentDeliveries: number;
+  createdAt: string;
+}
+
+export interface ListDriversResponse {
+  success: boolean;
+  message: string;
+  data: {
+    drivers: Driver[];
+    count: number;
+    tenant_id: string;
+  };
+}
+
 export async function fetchDashboard() {
   const res = await fetch(`${API_BASE}/admin/dashboard`, { headers: getAuthHeaders() });
   return handleResponse(res);
@@ -242,6 +263,18 @@ export async function updateUserRole(id: string, role: string) {
   return handleResponse(res);
 }
 
+/**
+ * GET /delivery/drivers
+ * Obtener lista de conductores de delivery
+ * Endpoint: https://y8b94sjrcc.execute-api.us-east-1.amazonaws.com/dev/delivery/drivers
+ */
+export async function listDrivers(): Promise<ListDriversResponse> {
+  const res = await fetch('https://y8b94sjrcc.execute-api.us-east-1.amazonaws.com/dev/delivery/drivers', {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(res);
+}
+
 export default {
   fetchDashboard,
   fetchTodayOrders,
@@ -258,4 +291,5 @@ export default {
   updateUser,
   deleteUser,
   updateUserRole,
+  listDrivers,
 };

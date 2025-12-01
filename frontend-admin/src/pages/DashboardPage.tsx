@@ -3,11 +3,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 // import { AdminDashboard } from '../components/sections/AdminDashboard';
 import { KitchenDashboard } from '../components/sections/KitchenDashboard';
+import { ChefExecutiveDashboard } from '../components/sections/ChefExecutiveDashboard';
 import { DeliveryDashboard } from '../components/sections/DeliveryDashboard';
 import { UserDashboard } from '../components/sections/UserDashboard';
 import { AdminStats } from '../components/admin/AdminStats';
 import { AdminProducts } from '../components/admin/AdminProducts';
 import { AdminUsers } from '../components/admin/AdminUsers';
+import { AdminDrivers } from '../components/admin/AdminDrivers';
 
 export function DashboardPage() {
   const { profile } = useAuth();
@@ -15,7 +17,7 @@ export function DashboardPage() {
   const { section } = useParams<{ section?: string }>();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('');
-  const [adminSubTab, setAdminSubTab] = useState<'stats' | 'products' | 'users'>('stats');
+  const [adminSubTab, setAdminSubTab] = useState<'stats' | 'products' | 'users' | 'drivers'>('stats');
 
   // Detectar la pestaña activa según la URL
   useEffect(() => {
@@ -23,19 +25,23 @@ export function DashboardPage() {
     
     if (path.includes('/dashboard/kitchen')) {
       setActiveTab('kitchen');
+    } else if (path.includes('/dashboard/chef-executive')) {
+      setActiveTab('chef-executive');
     } else if (path.includes('/dashboard/delivery')) {
       setActiveTab('delivery');
     } else if (path.includes('/dashboard/admin')) {
       setActiveTab('admin');
       // Detectar sub-pestaña de admin desde el parámetro :section
       if (section) {
-        setAdminSubTab(section as 'stats' | 'products' | 'users');
+        setAdminSubTab(section as 'stats' | 'products' | 'users' | 'drivers');
       }
     } else if (profile) {
       // Default según rol cuando está en /dashboard o /
       const role = profile.role?.toUpperCase() || '';
       if (role === 'ADMIN') {
         navigate('/dashboard/admin/stats', { replace: true });
+      } else if (role === 'CHEF_EXECUTIVE') {
+        navigate('/dashboard/chef-executive', { replace: true });
       } else if (role === 'COOK') {
         navigate('/dashboard/kitchen', { replace: true });
       } else if (role === 'DISPATCHER') {
@@ -63,6 +69,7 @@ export function DashboardPage() {
     const role = profile?.role?.toUpperCase() || '';
     const roleMap: Record<string, string> = {
       'ADMIN': 'Administrador',
+      'CHEF_EXECUTIVE': 'Chef Ejecutivo',
       'COOK': 'Cocinero',
       'DISPATCHER': 'Repartidor',
       'USER': 'Cliente',
@@ -85,6 +92,7 @@ export function DashboardPage() {
         </div>
       </div>
 
+      {/* Tabs de navegación según rol */}
       {role === 'ADMIN' && (
         <div className="container mx-auto px-4 py-6">
           <div className="flex space-x-4 mb-6">
@@ -99,10 +107,20 @@ export function DashboardPage() {
               Vista General
             </button>
             <button
+              onClick={() => navigate('/dashboard/chef-executive')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'chef-executive'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Chef Ejecutivo
+            </button>
+            <button
               onClick={() => navigate('/dashboard/kitchen')}
               className={`px-6 py-2 rounded-lg font-medium transition-all ${
                 activeTab === 'kitchen'
-                  ? 'bg-red-600 text-white'
+                  ? 'bg-orange-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
@@ -152,14 +170,24 @@ export function DashboardPage() {
                 >
                   Usuarios
                 </button>
+                <button 
+                  onClick={() => navigate('/dashboard/admin/drivers')} 
+                  className={`px-4 py-2 rounded font-medium transition-all ${
+                    adminSubTab === 'drivers' ? 'bg-red-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                >
+                  Conductores
+                </button>
               </div>
             </div>
 
             {adminSubTab === 'stats' && <AdminStats />}
             {adminSubTab === 'products' && <AdminProducts />}
             {adminSubTab === 'users' && <AdminUsers />}
+            {adminSubTab === 'drivers' && <AdminDrivers />}
           </div>
         )}
+        {activeTab === 'chef-executive' && <ChefExecutiveDashboard />}
         {activeTab === 'kitchen' && <KitchenDashboard />}
         {activeTab === 'delivery' && <DeliveryDashboard />}
         {activeTab === 'user' && <UserDashboard />}

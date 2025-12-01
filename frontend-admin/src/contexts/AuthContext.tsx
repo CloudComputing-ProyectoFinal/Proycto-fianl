@@ -92,7 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const low = r.toLowerCase().trim();
         // Exact matches for known backend role strings
         if (low === 'admin sede' || /admin/i.test(r) || /administrador/i.test(low)) return 'ADMIN';
-        if (low === 'cheff ejecutivo' || /chef|cheff|cocinero|cocin/i.test(low)) return 'COOK';
+        if (low === 'cheff ejecutivo' || low === 'chef ejecutivo' || /chef.*ejecutivo|cheff.*ejecutivo/i.test(low)) return 'CHEF_EXECUTIVE';
+        if (low === 'cocinero' || /cocinero|cocin/i.test(low)) return 'COOK';
         if (low === 'empacador' || low === 'repartidor' || /reparti|dispatch|despatc|empaca|empaqueta|empacador/i.test(low)) return 'DISPATCHER';
         if (/cliente|user|usuario/i.test(low)) return 'USER';
         return r.toUpperCase();

@@ -42,7 +42,24 @@ export function AdminUsers() {
       }
       
       console.log('[AdminUsers] normalized users list:', usersList);
-      setUsers(usersList);
+      
+      // Eliminar duplicados basados SOLO en email (campo único)
+      const seen = new Set<string>();
+      const uniqueUsers = usersList.filter((user: any) => {
+        const email = user.email || user.correo_electronico;
+        if (!email) return true; // Mantener usuarios sin email
+        
+        if (seen.has(email)) {
+          console.log('[AdminUsers] Duplicado encontrado y eliminado:', email);
+          return false; // Eliminar duplicado
+        }
+        
+        seen.add(email);
+        return true; // Mantener primer ocurrencia
+      });
+      
+      console.log('[AdminUsers] unique users:', uniqueUsers.length, 'de', usersList.length);
+      setUsers(uniqueUsers);
     } catch (err) {
       console.error('listUsers', err);
       setUsers([]); // Asegurar que sea un array vacío en caso de error
@@ -184,8 +201,8 @@ export function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {users.map(u => (
-              <tr key={u.id || u.userId} className="border-b hover:bg-gray-50">
+            {users.map((u, index) => (
+              <tr key={u.userId || u.id || u.email || index} className="border-b hover:bg-gray-50">
                 <td className="p-3">{u.nombre || u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim()}</td>
                 <td className="p-3">{u.correo_electronico || u.email}</td>
                 <td className="p-3">{u.role}</td>
