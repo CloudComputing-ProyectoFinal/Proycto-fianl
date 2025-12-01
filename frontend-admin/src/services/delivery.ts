@@ -278,13 +278,31 @@ export const updateOrderStatus = async (
   orderId: string,
   status: 'DELIVERING' | 'DELIVERED'
 ): Promise<{ success: boolean; message: string; data: { message: string; order: DeliveryOrder } }> => {
-  const res = await fetch(`${ORDERS_API_BASE}/orders/${orderId}`, {
+  const encodedOrderId = encodeURIComponent(orderId);
+  const url = `${ORDERS_API_BASE}/orders/${encodedOrderId}`;
+  
+  console.log('🚚 [Delivery.updateOrderStatus] OrderId:', orderId);
+  console.log('🔐 [Delivery.updateOrderStatus] Encoded:', encodedOrderId);
+  console.log('🌍 [Delivery.updateOrderStatus] URL:', url);
+  console.log('📦 [Delivery.updateOrderStatus] Body:', { status });
+  
+  const res = await fetch(url, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify({ status }),
   });
-  if (!res.ok) throw new Error(`updateOrderStatus failed: ${res.status}`);
-  return res.json();
+  
+  console.log('📡 [Delivery.updateOrderStatus] Status:', res.status);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('❌ [Delivery.updateOrderStatus] Error:', errorText);
+    throw new Error(`updateOrderStatus failed: ${res.status}`);
+  }
+  
+  const data = await res.json();
+  console.log('✅ [Delivery.updateOrderStatus] Data:', data);
+  return data;
 };
 
 /**
