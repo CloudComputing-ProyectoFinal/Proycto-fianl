@@ -1,26 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import chefExecutiveService from '../../services/chefExecutive';
 import type { KitchenOrder, Chef } from '../../services/chefExecutive';
 
 export function ChefExecutiveDashboard() {
-  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'orders' | 'chefs'>('orders');
   const [loading, setLoading] = useState(true);
   
   // Orders state
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
-  const [createdOrders, setCreatedOrders] = useState<KitchenOrder[]>([]);
   
   // Chefs state
   const [chefs, setChefs] = useState<Chef[]>([]);
-  
-  // Assign order modal state
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<KitchenOrder | null>(null);
-  const [selectedChefId, setSelectedChefId] = useState('');
-
-  const tenantId = profile?.tenantId || profile?.tenant_id || '';
 
   useEffect(() => {
     if (activeTab === 'orders') {
@@ -33,15 +23,22 @@ export function ChefExecutiveDashboard() {
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const [allOrdersRes, createdRes] = await Promise.all([
-        chefExecutiveService.listOrders(),
-        chefExecutiveService.getCreatedOrders(),
-      ]);
+      console.log('🔥 [ChefExecutiveDashboard] Loading orders...');
       
-      setOrders(allOrdersRes?.data?.orders || []);
-      setCreatedOrders(createdRes?.data?.orders || []);
+      // Obtener todas las órdenes del sistema
+      const allOrdersRes = await chefExecutiveService.getAllOrders();
+      console.log('✅ [ChefExecutiveDashboard] getAllOrders response:', allOrdersRes);
+      
+      const allOrders = allOrdersRes?.data?.orders || [];
+      
+      // Filtrar solo órdenes en estado PREPARING
+      const preparingOrders = allOrders.filter((order: KitchenOrder) => order.status === 'PREPARING');
+      
+      console.log('📊 [ChefExecutiveDashboard] PREPARING orders:', preparingOrders.length);
+      
+      setOrders(preparingOrders);
     } catch (err) {
-      console.error('loadOrders error:', err);
+      console.error('❌ [ChefExecutiveDashboard] loadOrders error:', err);
     } finally {
       setLoading(false);
     }
@@ -65,30 +62,17 @@ export function ChefExecutiveDashboard() {
 
   // ========== ORDER FUNCTIONS ==========
 
-  const openAssignModal = (order: KitchenOrder) => {
-    setSelectedOrder(order);
-    setSelectedChefId('');
-    setShowAssignModal(true);
-  };
-
-  const handleAssignOrder = async () => {
-    if (!selectedOrder || !selectedChefId) {
-      alert('Seleccione un chef');
-      return;
-    }
-
+  const handleMarkReady = async (orderId: string) => {
     try {
-      await chefExecutiveService.assignOrder(selectedOrder.orderId, {
-        chefId: selectedChefId,
-        tenantId,
-      });
+      console.log('👨‍🍳 [ChefExecutiveDashboard] Marking order as READY:', orderId);
       
-      alert('Orden asignada exitosamente');
-      setShowAssignModal(false);
+      await chefExecutiveService.markOrderReady(orderId);
+      
+      alert('✅ Orden marcada como READY (Lista para empacar)');
       loadOrders();
     } catch (err) {
-      console.error('assignOrder error:', err);
-      alert(`Error al asignar orden: ${err}`);
+      console.error('❌ [ChefExecutiveDashboard] markReady error:', err);
+      alert(`❌ Error al marcar orden: ${err}`);
     }
   };
 
@@ -172,133 +156,80 @@ export function ChefExecutiveDashboard() {
       {/* ORDERS TAB */}
       {activeTab === 'orders' && (
         <div className="space-y-6">
-          {/* Órdenes sin asignar */}
+          {/* Órdenes PREPARING - Chef Ejecutivo marca como READY */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold mb-4 text-red-600">
-              Órdenes Sin Asignar ({createdOrders.length})
+            <h2 className="text-xl font-bold mb-4 text-orange-600 flex items-center gap-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+              </svg>
+              Órdenes en Preparación ({orders.length})
             </h2>
             
-            {createdOrders.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="p-3">ID Orden</th>
-                      <th className="p-3">Cliente</th>
-                      <th className="p-3">Items</th>
-                      <th className="p-3">Total</th>
-                      <th className="p-3">Hora</th>
-                      <th className="p-3">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {createdOrders.map((order) => (
-                      <tr key={order.orderId} className="border-b hover:bg-gray-50">
-                        <td className="p-3 font-mono text-sm">
-                          {order.orderId.replace('ORDER#', '')}
-                        </td>
-                        <td className="p-3">
-                          <div className="font-medium">
-                            {order.customerInfo?.firstName} {order.customerInfo?.lastName}
-                          </div>
-                          <div className="text-xs text-gray-500">{order.customerInfo?.email}</div>
-                        </td>
-                        <td className="p-3">
-                          <div className="text-sm">
-                            {order.items.map((item, idx) => (
-                              <div key={idx}>
-                                {item.quantity}x {item.name}
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="p-3 font-semibold">S/ {order.total.toFixed(2)}</td>
-                        <td className="p-3 text-sm text-gray-600">
-                          {new Date(order.createdAt).toLocaleTimeString('es-PE', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                        <td className="p-3">
-                          <button
-                            onClick={() => openAssignModal(order)}
-                            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-                          >
-                            Asignar Chef
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No hay órdenes pendientes de asignación
-              </div>
-            )}
-          </div>
-
-          {/* Todas las órdenes */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold mb-4">Todas las Órdenes ({orders.length})</h2>
-            
             {orders.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b bg-gray-50">
-                      <th className="p-3">ID Orden</th>
-                      <th className="p-3">Estado</th>
-                      <th className="p-3">Chef Asignado</th>
-                      <th className="p-3">Cliente</th>
-                      <th className="p-3">Total</th>
-                      <th className="p-3">Hora</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((order) => (
-                      <tr key={order.orderId} className="border-b hover:bg-gray-50">
-                        <td className="p-3 font-mono text-sm">
-                          {order.orderId.replace('ORDER#', '')}
-                        </td>
-                        <td className="p-3">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            order.status === 'CREATED' ? 'bg-blue-100 text-blue-800' :
-                            order.status === 'ASSIGNED' ? 'bg-yellow-100 text-yellow-800' :
-                            order.status === 'PREPARING' ? 'bg-orange-100 text-orange-800' :
-                            order.status === 'COOKING' ? 'bg-red-100 text-red-800' :
-                            order.status === 'READY' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          {order.assignedChefName || (
-                            <span className="text-gray-400 italic">Sin asignar</span>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <div className="font-medium">
-                            {order.customerInfo?.firstName} {order.customerInfo?.lastName}
-                          </div>
-                        </td>
-                        <td className="p-3 font-semibold">S/ {order.total.toFixed(2)}</td>
-                        <td className="p-3 text-sm text-gray-600">
-                          {new Date(order.createdAt).toLocaleTimeString('es-PE', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {orders.map((order) => (
+                  <div
+                    key={order.orderId}
+                    className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-gray-900">
+                        #{order.orderId.replace('ORDER#', '').slice(0, 8)}
+                      </h3>
+                      <span className="bg-orange-200 text-orange-800 px-3 py-1 rounded-full text-xs font-bold">
+                        PREPARING
+                      </span>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold text-gray-700">
+                        {order.customerInfo?.firstName} {order.customerInfo?.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500">{order.customerInfo?.email}</p>
+                    </div>
+                    
+                    <div className="mb-3 space-y-1">
+                      {order.items.map((item, idx) => (
+                        <div key={idx} className="flex justify-between text-sm">
+                          <span>{item.quantity}x {item.name}</span>
+                          <span className="font-semibold">S/{item.subtotal.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="border-t border-orange-200 pt-3 mb-3">
+                      <div className="flex justify-between font-bold text-orange-700">
+                        <span>Total:</span>
+                        <span>S/ {order.total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {new Date(order.createdAt).toLocaleString('es-PE')}
+                    </p>
+                    
+                    <button
+                      onClick={() => handleMarkReady(order.orderId)}
+                      className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-lg font-bold hover:from-green-600 hover:to-green-700 shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Marcar como Lista
+                    </button>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                No hay órdenes registradas
+              <div className="text-center py-12">
+                <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p className="text-gray-500 font-medium">No hay órdenes en preparación</p>
+                <p className="text-gray-400 text-sm mt-1">Las órdenes PREPARING aparecerán aquí</p>
               </div>
             )}
           </div>
@@ -372,65 +303,6 @@ export function ChefExecutiveDashboard() {
           </div>
         </div>
       )}
-
-      {/* MODAL: Asignar Orden */}
-      {showAssignModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-xl font-bold mb-4">Asignar Orden a Chef</h3>
-            
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
-                Orden: <span className="font-mono">{selectedOrder.orderId}</span>
-              </p>
-              <p className="text-sm text-gray-600">
-                Total: <span className="font-semibold">S/ {selectedOrder.total.toFixed(2)}</span>
-              </p>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Seleccionar Chef</label>
-              <select
-                value={selectedChefId}
-                onChange={(e) => setSelectedChefId(e.target.value)}
-                className="w-full border rounded px-3 py-2"
-                required
-              >
-                <option value="">-- Seleccione un chef --</option>
-                {chefs
-                  .filter((c) => c.isAvailable !== false && (c.status === 'ACTIVE' || !c.status))
-                  .map((chef) => {
-                    const chefId = chef.cook_id || chef.chefId || '';
-                    const chefName = chef.name || `${chef.firstName || ''} ${chef.lastName || ''}`.trim();
-                    const spec = chef.specialization || chef.role || 'General';
-                    
-                    return (
-                      <option key={chefId} value={chefId}>
-                        {chefName} - {spec}
-                      </option>
-                    );
-                  })}
-              </select>
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowAssignModal(false)}
-                className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleAssignOrder}
-                className="flex-1 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-              >
-                Asignar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
 
     </div>
   );

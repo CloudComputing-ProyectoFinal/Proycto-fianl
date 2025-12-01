@@ -94,7 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (low === 'admin sede' || /admin/i.test(r) || /administrador/i.test(low)) return 'ADMIN';
         if (low === 'cheff ejecutivo' || low === 'chef ejecutivo' || /chef.*ejecutivo|cheff.*ejecutivo/i.test(low)) return 'CHEF_EXECUTIVE';
         if (low === 'cocinero' || /cocinero|cocin/i.test(low)) return 'COOK';
-        if (low === 'empacador' || low === 'repartidor' || /reparti|dispatch|despatc|empaca|empaqueta|empacador/i.test(low)) return 'DISPATCHER';
+        if (low === 'empacador' || low === 'empaquetador' || /empaca|empaqueta/i.test(low)) return 'PACKER';
+        if (low === 'repartidor' || low === 'conductor' || /reparti|dispatch|despatc|conduc/i.test(low)) return 'DISPATCHER';
         if (/cliente|user|usuario/i.test(low)) return 'USER';
         return r.toUpperCase();
       };

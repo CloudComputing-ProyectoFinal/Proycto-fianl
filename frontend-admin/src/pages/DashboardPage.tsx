@@ -5,6 +5,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { KitchenDashboard } from '../components/sections/KitchenDashboard';
 import { ChefExecutiveDashboard } from '../components/sections/ChefExecutiveDashboard';
 import { DeliveryDashboard } from '../components/sections/DeliveryDashboard';
+import { PackingDashboard } from '../components/sections/PackingDashboard';
 import { UserDashboard } from '../components/sections/UserDashboard';
 import { AdminStats } from '../components/admin/AdminStats';
 import { AdminProducts } from '../components/admin/AdminProducts';
@@ -27,6 +28,8 @@ export function DashboardPage() {
       setActiveTab('kitchen');
     } else if (path.includes('/dashboard/chef-executive')) {
       setActiveTab('chef-executive');
+    } else if (path.includes('/dashboard/packing')) {
+      setActiveTab('packing');
     } else if (path.includes('/dashboard/delivery')) {
       setActiveTab('delivery');
     } else if (path.includes('/dashboard/admin')) {
@@ -38,12 +41,15 @@ export function DashboardPage() {
     } else if (profile) {
       // Default según rol cuando está en /dashboard o /
       const role = profile.role?.toUpperCase() || '';
+      console.log('🔍 [DashboardPage] Profile role:', profile.role, '→ Uppercase:', role);
       if (role === 'ADMIN') {
         navigate('/dashboard/admin/stats', { replace: true });
       } else if (role === 'CHEF_EXECUTIVE') {
         navigate('/dashboard/chef-executive', { replace: true });
       } else if (role === 'COOK') {
         navigate('/dashboard/kitchen', { replace: true });
+      } else if (role === 'PACKER') {
+        navigate('/dashboard/packing', { replace: true });
       } else if (role === 'DISPATCHER') {
         navigate('/dashboard/delivery', { replace: true });
       } else if (role === 'USER') {
@@ -61,37 +67,30 @@ export function DashboardPage() {
   }
 
   const role = profile.role?.toUpperCase() || '';
+  
+  // Protección: usuarios normales van a su dashboard
   if (role === 'USER') {
     return <UserDashboard />;
   }
-
-  const getRoleDisplay = () => {
-    const role = profile?.role?.toUpperCase() || '';
-    const roleMap: Record<string, string> = {
-      'ADMIN': 'Administrador',
-      'CHEF_EXECUTIVE': 'Chef Ejecutivo',
-      'COOK': 'Cocinero',
-      'DISPATCHER': 'Repartidor',
-      'USER': 'Cliente',
-    };
-    return roleMap[role] || role;
-  };
+  
+  // Protección: roles no-admin SOLO pueden ver su propio dashboard
+  if (role !== 'ADMIN') {
+    if (role === 'CHEF_EXECUTIVE') {
+      return <ChefExecutiveDashboard />;
+    }
+    if (role === 'COOK') {
+      return <KitchenDashboard />;
+    }
+    if (role === 'PACKER') {
+      return <PackingDashboard />;
+    }
+    if (role === 'DISPATCHER') {
+      return <DeliveryDashboard />;
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-black text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-              <p className="text-gray-300">
-                Bienvenido, <strong>{profile?.firstName || profile?.nombre || 'Usuario'}</strong> - {getRoleDisplay()}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Tabs de navegación según rol */}
       {role === 'ADMIN' && (
         <div className="container mx-auto px-4 py-6">
@@ -125,6 +124,16 @@ export function DashboardPage() {
               }`}
             >
               Cocina
+            </button>
+            <button
+              onClick={() => navigate('/dashboard/packing')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'packing'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Empaquetado
             </button>
             <button
               onClick={() => navigate('/dashboard/delivery')}
@@ -189,6 +198,7 @@ export function DashboardPage() {
         )}
         {activeTab === 'chef-executive' && <ChefExecutiveDashboard />}
         {activeTab === 'kitchen' && <KitchenDashboard />}
+        {activeTab === 'packing' && <PackingDashboard />}
         {activeTab === 'delivery' && <DeliveryDashboard />}
         {activeTab === 'user' && <UserDashboard />}
       </div>

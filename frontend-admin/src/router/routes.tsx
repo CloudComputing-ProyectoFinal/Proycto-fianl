@@ -8,7 +8,7 @@ import { NotFoundPage } from "../pages/NotFoundPage";
 
 /**
  * Rutas para la aplicación administrativa/staff
- * Roles: ADMIN, CHEF_EXECUTIVE, COOK, DISPATCHER
+ * Roles: ADMIN, CHEF_EXECUTIVE, COOK, PACKER, DISPATCHER
  * 
  * Estructura:
  * - /dashboard - Vista principal según rol
@@ -18,6 +18,7 @@ import { NotFoundPage } from "../pages/NotFoundPage";
  * - /dashboard/admin/users - Gestión de usuarios
  * - /dashboard/chef-executive - Gestión de cocina y chefs (CHEF_EXECUTIVE)
  * - /dashboard/kitchen - Vista de cocina para cocineros (COOK)
+ * - /dashboard/packing - Vista de empaquetado (PACKER)
  * - /dashboard/delivery - Vista de delivery (DISPATCHER)
  */
 const router = createBrowserRouter([
@@ -51,6 +52,10 @@ const router = createBrowserRouter([
           },
           {
             path: "dashboard/kitchen",
+            element: <DashboardPage />,
+          },
+          {
+            path: "dashboard/packing",
             element: <DashboardPage />,
           },
           {

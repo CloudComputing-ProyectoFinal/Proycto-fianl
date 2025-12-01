@@ -4,6 +4,11 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL_KITCHEN || '';
+// Orders API usa el endpoint rpepuemxp5 (sin /auth ni /kitchen)
+const ORDERS_API_BASE = import.meta.env.VITE_API_URL_ORDERS || '';
+
+console.log('🔧 Kitchen Service - API_BASE:', API_BASE);
+console.log('🔧 Kitchen Service - ORDERS_API_BASE:', ORDERS_API_BASE);
 
 // ==================== TYPES ====================
 
@@ -11,7 +16,7 @@ export interface KitchenOrder {
   orderId: string;
   tenantId: string;
   userId: string;
-  status: 'ASSIGNED' | 'PREPARING' | 'COOKING' | 'READY';
+  status: 'CREATED' | 'PREPARED' | 'ASSIGNED' | 'PREPARING' | 'COOKING' | 'READY';
   items: OrderItem[];
   assignedChefId?: string;
   assignedChefName?: string;
@@ -85,6 +90,70 @@ const getAuthHeaders = () => {
 };
 
 // ========== ORDERS - COOK ==========
+
+/**
+ * GET /orders
+ * Obtener TODAS las órdenes del sistema (endpoint general)
+ * Endpoint: https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders
+ */
+export const getAllOrders = async (): Promise<ListOrdersResponse> => {
+  const url = `${ORDERS_API_BASE}/orders`;
+  console.log('🌐 [getAllOrders] Calling URL:', url);
+  console.log('🔑 [getAllOrders] Headers:', getAuthHeaders());
+  
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  
+  console.log('📡 [getAllOrders] Response status:', res.status);
+  console.log('📡 [getAllOrders] Response ok:', res.ok);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('❌ [getAllOrders] Error response:', errorText);
+    throw new Error(`getAllOrders failed: ${res.status} - ${errorText}`);
+  }
+  
+  const data = await res.json();
+  console.log('✅ [getAllOrders] Response data:', data);
+  return data;
+};
+
+/**
+ * PUT /orders/{orderId}
+ * Aceptar una orden CREATED y cambiarla a PREPARING
+ * Endpoint: https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders/{orderId}
+ */
+export const acceptOrder = async (orderId: string): Promise<OrderResponse> => {
+  // URL encode el orderId completo (con ORDER# incluido)
+  const encodedOrderId = encodeURIComponent(orderId);
+  const url = `${ORDERS_API_BASE}/orders/${encodedOrderId}`;
+  
+  console.log('🔄 [acceptOrder] Original orderId:', orderId);
+  console.log('🔐 [acceptOrder] Encoded orderId:', encodedOrderId);
+  console.log('🌐 [acceptOrder] Calling URL:', url);
+  console.log('📦 [acceptOrder] Body:', { status: 'PREPARING' });
+  
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status: 'PREPARING' }),
+  });
+  
+  console.log('📡 [acceptOrder] Response status:', res.status);
+  console.log('📡 [acceptOrder] Response ok:', res.ok);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('❌ [acceptOrder] Error response:', errorText);
+    throw new Error(`acceptOrder failed: ${res.status} - ${errorText}`);
+  }
+  
+  const data = await res.json();
+  console.log('✅ [acceptOrder] Response data:', data);
+  return data;
+};
 
 /**
  * GET /kitchen/orders
@@ -184,6 +253,8 @@ export const getNextStatus = (currentStatus: string): string => {
  */
 export const getStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
+    'CREATED': 'bg-purple-100 text-purple-800',
+    'PREPARED': 'bg-indigo-100 text-indigo-800',
     'ASSIGNED': 'bg-blue-100 text-blue-800',
     'PREPARING': 'bg-yellow-100 text-yellow-800',
     'COOKING': 'bg-orange-100 text-orange-800',
@@ -197,6 +268,8 @@ export const getStatusColor = (status: string): string => {
  */
 export const getStatusText = (status: string): string => {
   const texts: Record<string, string> = {
+    'CREATED': 'Nueva',
+    'PREPARED': 'Preparada',
     'ASSIGNED': 'Asignada',
     'PREPARING': 'Preparando',
     'COOKING': 'Cocinando',
@@ -208,6 +281,8 @@ export const getStatusText = (status: string): string => {
 // ========== EXPORT DEFAULT ==========
 
 export default {
+  getAllOrders,
+  acceptOrder,
   getMyOrders,
   getOrder,
   updateOrder,

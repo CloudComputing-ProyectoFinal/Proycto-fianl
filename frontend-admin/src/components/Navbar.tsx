@@ -13,6 +13,17 @@ export function Navbar({ currentPage }: NavbarProps) {
 
   const profileName = (profile as any)?.firstName || (profile as any)?.nombre || (profile as any)?.name || (profile as any)?.correo_electronico || '';
   const profileRole = String(((profile as any)?.role ?? '').toString().toUpperCase());
+  
+  const roleDisplayMap: Record<string, string> = {
+    'ADMIN': 'Administrador',
+    'CHEF_EXECUTIVE': 'Chef Ejecutivo',
+    'COOK': 'Cocinero',
+    'PACKER': 'Empaquetador',
+    'DISPATCHER': 'Repartidor',
+    'USER': 'Cliente',
+  };
+  const roleDisplay = roleDisplayMap[profileRole] || profileRole;
+  
   const showMainMenu = !profile || profileRole === 'USER';
 
   return (
@@ -48,7 +59,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                       <User size={18} />
                       <div className="text-left">
                         <div className="text-sm font-medium">{profileName}</div>
-                        <div className="text-xs text-gray-500 capitalize">{profileRole}</div>
+                        <div className="text-xs text-gray-500">{roleDisplay}</div>
                       </div>
                     </div>
 

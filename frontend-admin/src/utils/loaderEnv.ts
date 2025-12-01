@@ -1,4 +1,4 @@
-type resource = 'AUTH_URL' | 'WS_URL' | 'REPORTS_URL' | 'PLACE_URL'| 'STATS_URL'| 'USERS_URL' | 'ADMIN_URL' | 'INCIDENTS_URL' | 'DELIVERY_URL' | 'KITCHEN_URL';
+type resource = 'AUTH_URL' | 'WS_URL' | 'REPORTS_URL' | 'PLACE_URL'| 'STATS_URL'| 'USERS_URL' | 'ADMIN_URL' | 'INCIDENTS_URL' | 'DELIVERY_URL' | 'KITCHEN_URL' | 'ORDERS_URL';
 
 const envMap: Record<resource, string> = {
     AUTH_URL: 'VITE_API_URL_AUTH',
@@ -10,7 +10,8 @@ const envMap: Record<resource, string> = {
     ADMIN_URL: 'VITE_API_URL_ADMIN',
     INCIDENTS_URL: 'VITE_API_URL_INCIDENTS',
     DELIVERY_URL: 'VITE_API_URL_DELIVERY',
-    KITCHEN_URL: 'VITE_API_URL_KITCHEN'
+    KITCHEN_URL: 'VITE_API_URL_KITCHEN',
+    ORDERS_URL: 'VITE_API_URL_ORDERS'
 };
 
 export function loadEnv(resource: resource): string {

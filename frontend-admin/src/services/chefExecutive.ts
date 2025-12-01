@@ -4,6 +4,10 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL_KITCHEN || '';
+const ORDERS_API_BASE = import.meta.env.VITE_API_URL_ORDERS || '';
+
+console.log('👨‍🍳 ChefExecutive Service - API_BASE:', API_BASE);
+console.log('👨‍🍳 ChefExecutive Service - ORDERS_API_BASE:', ORDERS_API_BASE);
 
 // ==================== TYPES ====================
 
@@ -274,6 +278,68 @@ export const seedChefs = async (): Promise<{ message: string; count: number }> =
   return res.json();
 };
 
+// ========== ORDERS API - GENERAL ==========
+
+/**
+ * GET /orders
+ * Obtener TODAS las órdenes del sistema
+ * Endpoint: https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders
+ */
+export const getAllOrders = async (): Promise<ListOrdersResponse> => {
+  const url = `${ORDERS_API_BASE}/orders`;
+  console.log('🌍 [ChefExecutive.getAllOrders] URL:', url);
+  
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  
+  console.log('📡 [ChefExecutive.getAllOrders] Status:', res.status);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('❌ [ChefExecutive.getAllOrders] Error:', errorText);
+    throw new Error(`getAllOrders failed: ${res.status}`);
+  }
+  
+  const data = await res.json();
+  console.log('✅ [ChefExecutive.getAllOrders] Data:', data);
+  return data;
+};
+
+/**
+ * PUT /orders/{orderId}
+ * Marcar orden como READY (Chef Ejecutivo)
+ * Endpoint: https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders/{orderId}
+ */
+export const markOrderReady = async (orderId: string): Promise<any> => {
+  const encodedOrderId = encodeURIComponent(orderId);
+  const url = `${ORDERS_API_BASE}/orders/${encodedOrderId}`;
+  
+  console.log('🔄 [ChefExecutive.markOrderReady] OrderId:', orderId);
+  console.log('🔐 [ChefExecutive.markOrderReady] Encoded:', encodedOrderId);
+  console.log('🌍 [ChefExecutive.markOrderReady] URL:', url);
+  console.log('📦 [ChefExecutive.markOrderReady] Body:', { status: 'READY' });
+  
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status: 'READY' }),
+  });
+  
+  console.log('📡 [ChefExecutive.markOrderReady] Status:', res.status);
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error('❌ [ChefExecutive.markOrderReady] Error:', errorText);
+    throw new Error(`markOrderReady failed: ${res.status}`);
+  }
+  
+  const data = await res.json();
+  console.log('✅ [ChefExecutive.markOrderReady] Data:', data);
+  return data;
+};
+
 // ========== EXPORT DEFAULT ==========
 
 export default {
@@ -282,6 +348,8 @@ export default {
   getCreatedOrders,
   getOrder,
   assignOrder,
+  getAllOrders,
+  markOrderReady,
   
   // Chefs
   listChefs,

@@ -290,6 +290,7 @@ export function AdminUsers() {
                       <option value="COOK">COOK (Cocinero)</option>
                       <option value="Cheff ejecutivo">Cheff ejecutivo</option>
                       <option value="Cheff ejecutivo 2">Cheff ejecutivo 2</option>
+                      <option value="Empaquetador">PACKER (Empaquetador)</option>
                       <option value="DISPATCHER">DISPATCHER (Repartidor)</option>
                       <option value="ADMIN">ADMIN (Administrador)</option>
                     </select>

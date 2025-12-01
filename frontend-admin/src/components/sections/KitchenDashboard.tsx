@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChefHat, Clock } from 'lucide-react';
+import { ChefHat, Clock, Star, Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import kitchenService from '../../services/kitchen';
 import type { KitchenOrder } from '../../services/kitchen';
@@ -7,25 +7,65 @@ import type { KitchenOrder } from '../../services/kitchen';
 export function KitchenDashboard() {
   const { profile } = useAuth();
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
+  const [allOrders, setAllOrders] = useState<KitchenOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   const tenantId = profile?.tenantId || profile?.tenant_id || '';
 
   useEffect(() => {
-    loadMyOrders();
+    loadAllData();
     // Recargar cada 30 segundos
-    const interval = setInterval(loadMyOrders, 30000);
+    const interval = setInterval(loadAllData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadMyOrders = async () => {
+  const loadAllData = async () => {
     try {
-      const res = await kitchenService.getMyOrders();
-      setOrders(res?.data?.orders || []);
+      console.log('🔥 [KitchenDashboard] Iniciando loadAllData...');
+      
+      // SOLO cargar todas las órdenes y filtrar por status
+      console.log('📞 [KitchenDashboard] Llamando a getAllOrders()...');
+      const allRes = await kitchenService.getAllOrders();
+      console.log('✅ [KitchenDashboard] getAllOrders response:', allRes);
+      console.log('🔍 [KitchenDashboard] allRes.data:', allRes?.data);
+      console.log('🔍 [KitchenDashboard] allRes.data.orders:', allRes?.data?.orders);
+      
+      const allOrders = allRes?.data?.orders || [];
+      
+      // Filtrar por cada status
+      const createdOrders = allOrders.filter(o => o.status === 'CREATED');
+      const assignedOrders = allOrders.filter(o => o.status === 'ASSIGNED');
+      const preparingOrders = allOrders.filter(o => o.status === 'PREPARING');
+      const cookingOrders = allOrders.filter(o => o.status === 'COOKING');
+      const readyOrders = allOrders.filter(o => o.status === 'READY');
+      
+      console.log('📊 [KitchenDashboard] CREATED:', createdOrders.length);
+      console.log('📊 [KitchenDashboard] ASSIGNED:', assignedOrders.length);
+      console.log('📊 [KitchenDashboard] PREPARING:', preparingOrders.length);
+      console.log('📊 [KitchenDashboard] COOKING:', cookingOrders.length);
+      console.log('📊 [KitchenDashboard] READY:', readyOrders.length);
+      
+      // Guardar órdenes CREATED en allOrders
+      setAllOrders(createdOrders);
+      // Guardar el resto en orders para las columnas de trabajo
+      setOrders([...assignedOrders, ...preparingOrders, ...cookingOrders, ...readyOrders]);
+      
     } catch (err) {
-      console.error('loadMyOrders error:', err);
+      console.error('❌ [KitchenDashboard] loadAllData error:', err);
+      console.error('❌ [KitchenDashboard] Error details:', JSON.stringify(err, null, 2));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAcceptOrder = async (orderId: string) => {
+    try {
+      await kitchenService.acceptOrder(orderId);
+      alert('✅ Orden aceptada y marcada como PREPARING');
+      loadAllData();
+    } catch (err) {
+      console.error('handleAcceptOrder error:', err);
+      alert(`❌ Error al aceptar orden: ${err}`);
     }
   };
 
@@ -36,7 +76,7 @@ export function KitchenDashboard() {
         tenantId,
       });
       alert('Orden marcada como "Preparando"');
-      loadMyOrders();
+      loadAllData();
     } catch (err) {
       console.error('handleStartPreparing error:', err);
       alert(`Error: ${err}`);
@@ -50,7 +90,7 @@ export function KitchenDashboard() {
         tenantId,
       });
       alert('Orden marcada como "Cocinando"');
-      loadMyOrders();
+      loadAllData();
     } catch (err) {
       console.error('handleStartCooking error:', err);
       alert(`Error: ${err}`);
@@ -63,13 +103,16 @@ export function KitchenDashboard() {
         tenantId,
       });
       alert('Orden marcada como "Lista para entregar"');
-      loadMyOrders();
+      loadAllData();
     } catch (err) {
       console.error('handleMarkReady error:', err);
       alert(`Error: ${err}`);
     }
   };
 
+  // CREATED orders from getAllOrders (filtered)
+  const createdOrders = allOrders;
+  // My assigned orders from getMyOrders
   const assignedOrders = orders.filter(o => o.status === 'ASSIGNED');
   const preparingOrders = orders.filter(o => o.status === 'PREPARING');
   const cookingOrders = orders.filter(o => o.status === 'COOKING');
@@ -97,20 +140,88 @@ export function KitchenDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-lg p-6">
+      <div className="bg-gradient-to-r from-purple-600 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-8 text-white">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Panel de Cocina - Cocinero</h2>
-          <ChefHat className="text-orange-600" size={32} />
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Sparkles className="animate-pulse" size={32} />
+            Panel de Cocina Elite
+          </h2>
+          <ChefHat className="animate-bounce" size={40} />
         </div>
-        <p className="text-gray-600">
-          Bienvenido, <strong>{profile?.firstName || 'Cocinero'}</strong> - Tus órdenes asignadas
+        <p className="text-white/90">
+          Bienvenido, <strong className="text-yellow-300">{profile?.firstName || 'Chef'}</strong> 🔥
         </p>
-        <p className="text-sm text-gray-500 mt-1">
-          Total de órdenes activas: {orders.length}
-        </p>
+        <div className="flex gap-4 mt-3 text-sm">
+          <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur">
+            🆕 Nuevas: {createdOrders.length}
+          </span>
+          <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur">
+            📋 Asignadas: {assignedOrders.length}
+          </span>
+          <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur">
+            🍳 En proceso: {preparingOrders.length + cookingOrders.length}
+          </span>
+          <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur">
+            ✅ Listas: {readyOrders.length}
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {/* NUEVAS ÓRDENES - CREATED */}
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <Star size={20} className="mr-2 text-purple-600 animate-pulse" />
+            Nuevas Órdenes ({createdOrders.length})
+          </h3>
+          <div className="space-y-4">
+            {createdOrders.length === 0 ? (
+              <div className="bg-gray-50 rounded-lg p-6 text-center">
+                <p className="text-gray-500">Sin órdenes nuevas</p>
+              </div>
+            ) : (
+              createdOrders.map((order) => (
+                <div
+                  key={order.orderId}
+                  className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-bold text-gray-900 text-sm">
+                      #{order.orderId.replace('ORDER#', '').slice(0, 8)}
+                    </h4>
+                    <Sparkles size={16} className="text-purple-600 animate-spin" style={{ animationDuration: '3s' }} />
+                  </div>
+                  <div className="text-xs text-gray-600 mb-2 space-y-1">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between">
+                        <span>{item.quantity}x {item.name}</span>
+                        <span className="font-semibold">S/{item.subtotal.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-purple-200 pt-2 mb-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">Total:</span>
+                      <span className="font-bold text-purple-700">S/{order.total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                    <Clock size={12} />
+                    {new Date(order.createdAt).toLocaleString('es-PE')}
+                  </p>
+                  <button
+                    onClick={() => handleAcceptOrder(order.orderId)}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 text-sm shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                  >
+                    <Star size={16} className="animate-pulse" />
+                    Aceptar Orden
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
         {/* Asignadas */}
         <div>
           <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
