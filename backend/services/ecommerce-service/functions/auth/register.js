@@ -27,9 +27,14 @@ module.exports.handler = async (event) => {
     const body = event.body ? JSON.parse(event.body) : event;
 
     // Validar campos requeridos
-    validateRequiredFields(body, ['email', 'password', 'firstName', 'lastName', 'role']);
+    validateRequiredFields(body, ['email', 'password', 'firstName', 'lastName']);
 
-    const { email, password, firstName, lastName, phoneNumber, address, role, vehicleType, tenant_id } = body;
+    let { email, password, firstName, lastName, phoneNumber, address, tenant_id } = body;
+
+    // Si no se envía tenant_id y el usuario es cliente, asignar 'PUBLIC'
+    if (!tenant_id) {
+      tenant_id = 'PUBLIC';
+    }
 
     // Validar email
     if (!validateEmail(email)) {
@@ -56,7 +61,7 @@ module.exports.handler = async (event) => {
     // Hash de la contraseña
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Crear usuario
+    // Crear usuario cliente
     const userId = uuidv4();
     const timestamp = new Date().toISOString();
 
@@ -68,7 +73,7 @@ module.exports.handler = async (event) => {
       lastName,
       phoneNumber: phoneNumber || null,
       address: address || null,
-      role: role || USER_ROLES.CLIENTE,
+      role: USER_ROLES.CLIENTE,
       tenant_id: tenant_id || null,
       status: 'ACTIVE',
       createdAt: timestamp,
@@ -77,37 +82,7 @@ module.exports.handler = async (event) => {
 
     await putItem(USERS_TABLE, newUser);
 
-    // Si el rol es REPARTIDOR, crear también en la tabla de drivers
-    if (role === USER_ROLES.REPARTIDOR) {
-      const DRIVERS_TABLE = process.env.DRIVERS_TABLE;
-      const driver = {
-        driverId: uuidv4(),
-        userId,
-        name: `${firstName} ${lastName}`,
-        vehicleType: vehicleType || 'moto',
-        tenant_id: tenant_id || null,
-        isAvailable: true,
-        currentDeliveries: 0,
-        createdAt: timestamp
-      };
-      await putItem(DRIVERS_TABLE, driver);
-    }
-
-    // Si el rol es CHEF_EJECUTIVO o COCINERO, crear también en la tabla de chefs
-    if (role === USER_ROLES.CHEF_EJECUTIVO || role === USER_ROLES.COCINERO) {
-      const CHEFS_TABLE = process.env.CHEFS_TABLE;
-      const chef = {
-        chefId: uuidv4(),
-        userId,
-        name: `${firstName} ${lastName}`,
-        tenant_id: tenant_id || null,
-        isAvailable: true,
-        currentOrders: 0,
-        createdAt: timestamp
-      };
-    }
-
-    console.log(`✅ Usuario registrado: ${userId}`);
+    console.log(`✅ Cliente registrado: ${userId}`);
 
     // Generar token JWT
     const token = await generateToken({
@@ -118,12 +93,12 @@ module.exports.handler = async (event) => {
     });
 
     // Respuesta sin la contraseña
-    const { passwordHash: _, ...userWithoutPassword } = newUser;
+    const { passwordHash: omit, ...userWithoutPassword } = newUser;
 
     return success({
       user: userWithoutPassword,
       token
-    }, 'Usuario registrado exitosamente');
+    }, 'Cliente registrado exitosamente');
 
   } catch (error) {
     console.error('❌ Register error:', error);

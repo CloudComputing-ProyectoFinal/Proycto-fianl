@@ -1,4 +1,4 @@
-const { success, error, forbidden } = require('../../shared/utils/response');
+const { success, badRequest, unauthorized, serverError } = require('../../shared/utils/response');
 const { getItem, putItem, query, scan, updateItem, deleteItem } = require('../../shared/database/dynamodb-client');
 const { validateOwnership, validateTenantAccess } = require('../../shared/utils/validation');
 const AWS = require('aws-sdk');
@@ -14,21 +14,50 @@ exports.handler = async (event) => {
     const { orderId } = event.pathParameters;
     const { status, ...updateFields } = JSON.parse(event.body);
     if (!orderId || !status) {
-      return error('orderId y status son requeridos');
+      return badRequest('orderId y status son requeridos');
     }
 
     // Obtener orden actual
-    const ORDERS_TABLE = process.env.ORDERS_TABLE || 'Orders-dev';
-    const orderResult = await getItem(ORDERS_TABLE, { orderId });
-    if (!orderResult) {
-      return error('Orden no encontrada');
-    }
+  const ORDERS_TABLE = process.env.ORDERS_TABLE || 'Orders-dev';
+  console.log('Consultando orderId:', orderId);
+  const decodedOrderId = decodeURIComponent(orderId);
+  console.log('OrderId decodificado:', decodedOrderId);
+  const orderResult = await getItem(ORDERS_TABLE, { orderId: decodedOrderId });
+      if (!orderResult) {
+        return badRequest('Orden no encontrada');
+      }
+
+      // Bloquear cambios si la orden ya está en DELIVERED
+      if (orderResult.status === 'DELIVERED') {
+        return badRequest('No se puede modificar una orden entregada');
+      }
 
     // Obtener usuario que hace el cambio
     const user = event.requestContext?.authorizer || {};
+    // Validación: solo el cocinero asignado puede cambiar de CREATED a COOKING
+    if (
+      orderResult.status === 'CREATED' &&
+      status === 'COOKING'
+    ) {
+      // El cocinero asignado puede estar en cookId o userId de la orden
+      const assignedCookId = orderResult.cookId || orderResult.cook_id || orderResult.userId;
+      const requesterId = user.userId || user.cookId || user.cook_id;
+      if (!assignedCookId || assignedCookId !== requesterId) {
+        return unauthorized('Solo el cocinero asignado puede iniciar la preparación de la orden');
+      }
+    }
+
+    // Construir nombre usando name, o firstName + lastName si están disponibles
+    let fullName = user.name || '';
+    if (!fullName && user.firstName) {
+      fullName = user.firstName;
+      if (user.lastName) {
+        fullName += ' ' + user.lastName;
+      }
+    }
     const updatedBy = {
       email: user.email || '',
-      name: user.name || '',
+      name: fullName,
       role: user.role || '',
       timestamp: new Date().toISOString()
     };
@@ -103,20 +132,15 @@ exports.handler = async (event) => {
     if (status === 'READY') {
       const stepfunctions = new AWS.StepFunctions();
       const input = {
-        orderId,
-        tenant_id: updatedOrder.tenant_id,
-        sedeLocation: updatedOrder.sedeLocation // Asegúrate que este campo exista en la orden
+        orderId: decodedOrderId,
+        tenant_id: updatedOrder.tenant_id
       };
-      try {
-        const params = {
-          stateMachineArn: process.env.ASSIGN_DRIVER_STEPFUNCTION_ARN,
-          input: JSON.stringify(input)
-        };
-        await stepfunctions.startExecution(params).promise();
-        console.log('🚚 Step Function de asignación de driver iniciada');
-      } catch (sfError) {
-        console.error('❌ Error al iniciar Step Function:', sfError);
-      }
+      const params = {
+        stateMachineArn: process.env.ASSIGN_DRIVER_STEPFUNCTION_ARN,
+        input: JSON.stringify(input)
+      };
+      await stepfunctions.startExecution(params).promise();
+      console.log('🚚 Step Function de asignación de driver iniciada');
     }
 
     // Si el estado es PACKED, puedes agregar lógica adicional aquí (notificación, integración, etc.)
@@ -129,6 +153,6 @@ exports.handler = async (event) => {
     return success({ message: 'Orden actualizada', order: updatedOrder });
   } catch (err) {
     console.error('Error:', err);
-    return error(err.message || 'Error interno del servidor');
+    return serverError(err.message || 'Error interno del servidor', err);
   }
 };

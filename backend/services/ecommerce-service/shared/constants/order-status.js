@@ -7,6 +7,7 @@ module.exports = {
     CREATED: 'CREATED',         // Orden creada por cliente
     COOKING: 'COOKING',         // Asignada a cocinero, en preparación
     READY: 'READY',             // Lista para entregar
+    PACKED: 'PACKED',           // Orden empaquetada
     DELIVERING: 'DELIVERING',   // Repartidor en camino
     DELIVERED: 'DELIVERED',     // Entregada al cliente
     CANCELLED: 'CANCELLED'      // Cancelada
@@ -16,7 +17,8 @@ module.exports = {
   TRANSITIONS: {
     'CREATED': ['COOKING', 'CANCELLED'],
     'COOKING': ['READY', 'CANCELLED'],
-    'READY': ['DELIVERING', 'CANCELLED'],
+    'READY': ['PACKED', 'CANCELLED'],
+    'PACKED': ['DELIVERING', 'CANCELLED'],
     'DELIVERING': ['DELIVERED', 'CANCELLED'],
     'DELIVERED': [],
     'CANCELLED': []

@@ -158,6 +158,7 @@ module.exports = {
   created,
   noContent,
   badRequest,
+  error: badRequest, // Alias para compatibilidad
   unauthorized,
   forbidden,
   notFound,

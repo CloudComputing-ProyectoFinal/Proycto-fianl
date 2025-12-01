@@ -26,6 +26,7 @@ provider:
     EVENT_BUS_NAME: fridays-event-bus-${self:provider.stage}
     S3_BUCKET_NAME: fridays-product-images-${self:provider.stage}
     ORDER_PROCESSING_STATE_MACHINE_ARN: arn:aws:states:us-east-1:085179068256:stateMachine:FridaysOrderWorkflow-${self:provider.stage}
+    ASSIGN_DRIVER_STEPFUNCTION_ARN: arn:aws:states:us-east-1:085179068256:stateMachine:AssignDriverStepFunction
     SQS_ORDER_QUEUE_URL: https://sqs.us-east-1.amazonaws.com/085179068256/fridays-order-queue-${self:provider.stage}.fifo
 
     SNS_NOTIFICATIONS_TOPIC_ARN: arn:aws:sns:us-east-1:085179068256:fridays-notifications-${self:provider.stage}
@@ -193,6 +194,17 @@ functions:
             name: authorizer
             type: REQUEST
 
+  updateOrder:
+    handler: functions/orders/updateOrder.handler
+    events:
+      - http:
+          path: /orders/{orderId}
+          method: PUT
+          cors: true
+          authorizer:
+            name: authorizer
+            type: REQUEST
+
   # ============================================================================
   # CART (CLIENTE)
   # ============================================================================
@@ -257,9 +269,7 @@ functions:
             name: authorizer
             type: REQUEST
 
-  # ============================================================================
-  # PRODUCTS ADMIN (ADMIN_SEDE)
-  # ============================================================================
+
   adminCreateProduct:
     handler: functions/products-admin/createProduct.handler
     events:
@@ -304,9 +314,6 @@ functions:
             name: authorizer
             type: REQUEST
 
-  # ============================================================================
-  # NUEVAS FUNCIONES AGREGADAS - ECOMMERCE
-  # ============================================================================
   adminListProducts:
     handler: functions/products-admin/listProducts.handler
     events:

@@ -11,34 +11,18 @@
 			"name": "🚗 DRIVERS",
 			"item": [
 				{
-					"name": "Create Driver",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Juan Mendoza\",\n  \"email\": \"juan@fridays.pe\",\n  \"phone\": \"987654321\",\n  \"vehicleType\": \"Moto\",\n  \"licensePlate\": \"ABC-123\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/drivers",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"drivers"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "List Drivers",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxZDExZDA5Yy05Nzc2LTQ4OWItYjc3OS00ZjIwYTdmYzlhOTgiLCJlbWFpbCI6ImFkbWluQGZyaWRheXMucGUiLCJyb2xlIjoiQWRtaW4gU2VkZSIsInRlbmFudF9pZCI6IlRFTkFOVCMwMDEiLCJpYXQiOjE3NjQ0Nzc2NzAsImV4cCI6MTc2NDU2NDA3MH0.vxdblL8rioGIq-WkBeXSQlMscdlqneDDZbNkx0gzpdA",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
@@ -56,16 +40,26 @@
 				{
 					"name": "Get Driver",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxZDExZDA5Yy05Nzc2LTQ4OWItYjc3OS00ZjIwYTdmYzlhOTgiLCJlbWFpbCI6ImFkbWluQGZyaWRheXMucGUiLCJyb2xlIjoiQWRtaW4gU2VkZSIsInRlbmFudF9pZCI6IlRFTkFOVCMwMDEiLCJpYXQiOjE3NjQ1NDc0MjMsImV4cCI6MTc2NDYzMzgyM30.vlCwklJ5B2UPVNaORabx4ccaVwm9cymNhQMv4qm96p8",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/drivers/driver_123",
+							"raw": "{{baseUrl}}/drivers/f2b06093-376e-43a9-a774-15bc42f70d9f",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"drivers",
-								"driver_123"
+								"f2b06093-376e-43a9-a774-15bc42f70d9f"
 							]
 						}
 					},
@@ -74,6 +68,16 @@
 				{
 					"name": "Get Available Drivers",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxZDExZDA5Yy05Nzc2LTQ4OWItYjc3OS00ZjIwYTdmYzlhOTgiLCJlbWFpbCI6ImFkbWluQGZyaWRheXMucGUiLCJyb2xlIjoiQWRtaW4gU2VkZSIsInRlbmFudF9pZCI6IlRFTkFOVCMwMDEiLCJpYXQiOjE3NjQ1NDY4MTAsImV4cCI6MTc2NDYzMzIxMH0.4vwxwnfrvx-HxEsV0eXADrsGER3P-vlrt648bV99m0s",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {

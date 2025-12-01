@@ -64,6 +64,10 @@
           "url": "https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders/{orderId}/cancel"
         },
         {
+          "method": "PUT",
+          "url": "https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders/{orderId}"
+        },
+        {
           "method": "POST",
           "url": "https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/cart/validate"
         },
@@ -135,10 +139,6 @@
         {
           "method": "DELETE",
           "url": "https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/{chefId}"
-        },
-        {
-          "method": "POST",
-          "url": "https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}/assign"
         },
         {
           "method": "GET",

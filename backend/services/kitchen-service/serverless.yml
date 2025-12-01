@@ -16,8 +16,9 @@ provider:
     STAGE: ${self:provider.stage}
     REGION: us-east-1
     ORDERS_TABLE: Orders-${self:provider.stage}
-    CHEFS_TABLE: Chefs-${self:provider.stage}
+    USERS_TABLE: Users-${self:provider.stage}
     EVENT_BUS_NAME: fridays-event-bus-${self:provider.stage}
+    COOKS_TABLE: Cooks-${self:provider.stage}
 
 # Configurar empaquetado para incluir shared
 package:
@@ -68,17 +69,6 @@ functions:
       - http:
           path: /kitchen/chefs/{chefId}
           method: DELETE
-          cors: true
-          authorizer:
-            name: authorizer
-            type: REQUEST
-
-  assignOrder:
-    handler: functions/orders/assignOrder.handler
-    events:
-      - http:
-          path: /kitchen/orders/{orderId}/assign
-          method: POST
           cors: true
           authorizer:
             name: authorizer

@@ -16,6 +16,7 @@ provider:
     STAGE: ${self:provider.stage}
     REGION: us-east-1
     ORDERS_TABLE: Orders-${self:provider.stage}
+  ASSIGN_COOK_STEPFUNCTION_ARN: arn:aws:states:us-east-1:085179068256:stateMachine:AssignCookStepFunction
 
 # Configurar empaquetado para incluir shared
 package:
@@ -26,12 +27,13 @@ package:
     - '!**/*.md'
 
 functions:
-  orderQueueWorker:
-    handler: functions/sqs-workers/orderQueueWorker.handler
+
+  processOrderWorker:
+    handler: functions/orders/processOrderWorker.handler
     events:
       - sqs:
-          arn: !GetAtt FridaysOrderQueue.Arn
-          batchSize: 10
+          arn: arn:aws:sqs:us-east-1:085179068256:fridays-order-queue-dev.fifo
+          batchSize: 5
 
 resources:
   Resources:

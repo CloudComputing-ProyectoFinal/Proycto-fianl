@@ -13,16 +13,26 @@
 				{
 					"name": "Get Pending Orders",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwODk2YTEwMS03ZjhhLTQ3YTItYWIyOC01NTlhZjdiZWZjMGYiLCJlbWFpbCI6ImRyaXZlcjEwMkBmcmlkYXlzLnBlIiwicm9sZSI6IlJlcGFydGlkb3IiLCJ0ZW5hbnRfaWQiOiJURU5BTlQjMDAxIiwiaWF0IjoxNzY0NDczNzUyLCJleHAiOjE3NjQ1NjAxNTJ9.WK7kZCCevJRHP4QWBJHARCUQtGcRv-5bdpbdlbhW4hA",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/orders/pending",
+							"raw": "{{baseUrl}}/orders/created",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"orders",
-								"pending"
+								"created"
 							]
 						},
 						"description": "Ver órdenes pendientes en cocina"
@@ -82,43 +92,40 @@
 			"name": "👨‍🍳 CHEFS",
 			"item": [
 				{
-					"name": "Create Chef",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Carlos Pérez\",\n  \"email\": \"carlos@fridays.pe\",\n  \"specialty\": \"Parrilla\",\n  \"sedeId\": \"sede_lima\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/chefs",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"chefs"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "List Chefs",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxZDExZDA5Yy05Nzc2LTQ4OWItYjc3OS00ZjIwYTdmYzlhOTgiLCJlbWFpbCI6ImFkbWluQGZyaWRheXMucGUiLCJyb2xlIjoiQWRtaW4gU2VkZSIsInRlbmFudF9pZCI6IlRFTkFOVCMwMDEiLCJpYXQiOjE3NjQ1NDI1NzksImV4cCI6MTc2NDYyODk3OX0.YE5OiHjeCdZuzcCEWsbpIuKQ8Frcyomm1bDIU-v2IWc",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/chefs",
+							"raw": "https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs?role=Cheff Ejecutivo",
+							"protocol": "https",
 							"host": [
-								"{{baseUrl}}"
+								"9gxi9k52k6",
+								"execute-api",
+								"us-east-1",
+								"amazonaws",
+								"com"
 							],
 							"path": [
+								"dev",
+								"kitchen",
 								"chefs"
+							],
+							"query": [
+								{
+									"key": "role",
+									"value": "Cheff Ejecutivo"
+								}
 							]
 						}
 					},
@@ -130,13 +137,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/chefs/chef_123",
+							"raw": "{{baseUrl}}/chefs/42067845-ebcb-4d0a-9601-222a9083d690",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"chefs",
-								"chef_123"
+								"42067845-ebcb-4d0a-9601-222a9083d690"
 							]
 						}
 					},
@@ -194,7 +201,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"chefId\": \"chef_123\"\n}",
+							"raw": "{\n  \"chefId\": \"\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"

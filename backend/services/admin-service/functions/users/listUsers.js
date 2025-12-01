@@ -26,12 +26,22 @@ module.exports.handler = async (event) => {
       'tenant_id-role-index'
     );
     
+    // Filtrar solo staff con roles exactos permitidos
+    const allowedRoles = ['Cocinero', 'Cheff Ejecutivo', 'Empacador', 'Admin Sede', 'Repartidor'];
+    let staffUsers = users.filter(u => allowedRoles.includes(u.role));
+    // Si viene filtro por rol, normalizar y filtrar
+    const queryParams = event.queryStringParameters || {};
+    if (queryParams.role) {
+      // Normalizar: primera letra mayúscula, resto minúsculas, espacios correctos
+      let normalizedRole = queryParams.role.trim().toLowerCase()
+        .replace(/(^|\s)[a-z]/g, l => l.toUpperCase());
+      staffUsers = staffUsers.filter(u => u.role === normalizedRole);
+    }
     // Remover passwords
-    const usersWithoutPassword = users.map(u => {
+    const usersWithoutPassword = staffUsers.map(u => {
       const { passwordHash, ...rest } = u;
       return rest;
     });
-    
     return success({ users: usersWithoutPassword });
   } catch (error) {
     console.error('❌ Error:', error);

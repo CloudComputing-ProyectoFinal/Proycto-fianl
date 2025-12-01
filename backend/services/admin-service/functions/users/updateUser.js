@@ -69,10 +69,9 @@ module.exports.handler = async (event) => {
       expressionValues[':email'] = body.email;
     }
     
+    // No permitir actualizar el rol
     if (body.role) {
-      updateExpressions.push('#role = :role');
-      expressionNames['#role'] = 'role';
-      expressionValues[':role'] = body.role;
+      console.log('⚠️ Intento de actualizar el rol ignorado');
     }
     
     if (body.address) {

@@ -1,0 +1,33 @@
+{
+  "Comment": "Step Function para asignar cocinero automáticamente a la orden",
+  "StartAt": "BuscarCocineroDisponible",
+  "States": {
+    "BuscarCocineroDisponible": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:getAvailableCook",
+      "ResultPath": "$.cookResult",
+      "Next": "VerificarCocinero"
+    },
+    "VerificarCocinero": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.cookResult.cook",
+          "IsNull": true,
+          "Next": "EsperarYReintentar"
+        }
+      ],
+      "Default": "AsignarCocinero"
+    },
+    "EsperarYReintentar": {
+      "Type": "Wait",
+      "Seconds": 10,
+      "Next": "BuscarCocineroDisponible"
+    },
+    "AsignarCocinero": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:assignCookToOrder",
+      "End": true
+    }
+  }
+}

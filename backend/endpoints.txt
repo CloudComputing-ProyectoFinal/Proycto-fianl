@@ -21,6 +21,7 @@ endpoints:
   GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/users/orders
   GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders
   PUT - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders/{orderId}/cancel
+  PUT - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders/{orderId}
   POST - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/cart/validate
   POST - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/cart
   GET - https://rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/cart
@@ -50,6 +51,7 @@ functions:
   listUserOrders: fridays-ecommerce-service-dev-listUserOrders
   listOrders: fridays-ecommerce-service-dev-listOrders
   cancelOrder: fridays-ecommerce-service-dev-cancelOrder
+  updateOrder: fridays-ecommerce-service-dev-updateOrder
   validateCart: fridays-ecommerce-service-dev-validateCart
   addToCart: fridays-ecommerce-service-dev-addToCart
   getCart: fridays-ecommerce-service-dev-getCart
@@ -77,7 +79,6 @@ endpoints:
   GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs
   PUT - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/{chefId}
   DELETE - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/chefs/{chefId}
-  POST - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}/assign
   GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/created
   GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders/{orderId}
   GET - https://9gxi9k52k6.execute-api.us-east-1.amazonaws.com/dev/kitchen/orders
@@ -86,7 +87,6 @@ functions:
   listChefs: fridays-kitchen-service-dev-listChefs
   updateChef: fridays-kitchen-service-dev-updateChef
   deleteChef: fridays-kitchen-service-dev-deleteChef
-  assignOrder: fridays-kitchen-service-dev-assignOrder
   getCreatedOrders: fridays-kitchen-service-dev-getCreatedOrders
   getKitchenOrder: fridays-kitchen-service-dev-getKitchenOrder
   listKitchenOrders: fridays-kitchen-service-dev-listKitchenOrders
@@ -211,11 +211,18 @@ functions:
 ════════════════════════════════════════════════════════
 SERVICE: workers-service
 ════════════════════════════════════════════════════════
+
+Warning: Invalid configuration encountered
+  at 'provider': unrecognized property 'ASSIGN_COOK_STEPFUNCTION_ARN'
+
+Learn more about configuration validation here: http://slss.io/configuration-validation
 service: fridays-workers-service
 stage: dev
 region: us-east-1
 stack: fridays-workers-service-dev
 functions:
-  orderQueueWorker: fridays-workers-service-dev-orderQueueWorker
+  processOrderWorker: fridays-workers-service-dev-processOrderWorker
+
+1 deprecation found: run 'serverless doctor' for more details
 
 

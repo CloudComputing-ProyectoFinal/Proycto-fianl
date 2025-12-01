@@ -102,15 +102,15 @@ async function query(tableName, keyConditionExpression, expressionValues, indexN
       KeyConditionExpression: keyConditionExpression,
       ExpressionAttributeValues: expressionValues
     };
-
     if (indexName) {
       params.IndexName = indexName;
     }
-
     if (limit) {
       params.Limit = limit;
     }
-
+    if (expressionNames && Object.keys(expressionNames).length > 0) {
+      params.ExpressionAttributeNames = expressionNames;
+    }
     const result = await dynamodb.query(params).promise();
     return result.Items;
   } catch (error) {

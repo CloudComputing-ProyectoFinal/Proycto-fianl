@@ -20,6 +20,8 @@ provider:
     SEDES_TABLE: Sedes-${self:provider.stage}
     TENANTS_TABLE: Tenants-${self:provider.stage}
     PRODUCTS_TABLE: Products-${self:provider.stage}
+    COOKS_TABLE: Cooks-${self:provider.stage}
+    DRIVERS_TABLE: Drivers-${self:provider.stage}
 
 # Configurar empaquetado para incluir shared
 package:
