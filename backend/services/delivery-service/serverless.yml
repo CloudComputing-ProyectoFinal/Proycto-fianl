@@ -1,7 +1,5 @@
 service: fridays-delivery-service
 
-frameworkVersion: '3'
-
 provider:
   name: aws
   runtime: nodejs20.x
@@ -10,7 +8,7 @@ provider:
   
   # ⚠️ AWS ACADEMY: Usar LabRole
   iam:
-    role: arn:aws:iam::085179068256:role/LabRole
+    role: arn:aws:iam::439535099835:role/LabRole
   
   environment:
     STAGE: ${self:provider.stage}

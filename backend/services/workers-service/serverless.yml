@@ -10,13 +10,13 @@ provider:
   
   # ⚠️ AWS ACADEMY: Usar LabRole
   iam:
-    role: arn:aws:iam::085179068256:role/LabRole
+    role: arn:aws:iam::439535099835:role/LabRole
   
   environment:
     STAGE: ${self:provider.stage}
     REGION: us-east-1
     ORDERS_TABLE: Orders-${self:provider.stage}
-  ASSIGN_COOK_STEPFUNCTION_ARN: arn:aws:states:us-east-1:085179068256:stateMachine:AssignCookStepFunction
+    ASSIGN_COOK_STEPFUNCTION_ARN: arn:aws:states:us-east-1:439535099835:stateMachine:AssignCookStepFunction
 
 # Configurar empaquetado para incluir shared
 package:
@@ -32,7 +32,7 @@ functions:
     handler: functions/orders/processOrderWorker.handler
     events:
       - sqs:
-          arn: arn:aws:sqs:us-east-1:085179068256:fridays-order-queue-dev.fifo
+          arn: arn:aws:sqs:us-east-1:439535099835:fridays-order-queue-dev.fifo
           batchSize: 5
 
 resources:
