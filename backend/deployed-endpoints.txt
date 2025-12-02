@@ -1,14 +1,2 @@
 === ENDPOINTS DE ecommerce-service ===
 
-=== ENDPOINTS DE kitchen-service ===
-
-=== ENDPOINTS DE delivery-service ===
-
-=== ENDPOINTS DE admin-service ===
-
-=== ENDPOINTS DE websocket-service ===
-
-=== ENDPOINTS DE stepfunctions-service ===
-
-=== ENDPOINTS DE workers-service ===
-

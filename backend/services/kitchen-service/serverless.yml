@@ -34,7 +34,16 @@ functions:
       - http:
           path: /kitchen/chefs/{chefId}
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -45,7 +54,16 @@ functions:
       - http:
           path: /kitchen/chefs
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -56,7 +74,16 @@ functions:
       - http:
           path: /kitchen/chefs/{chefId}
           method: PUT
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -67,7 +94,16 @@ functions:
       - http:
           path: /kitchen/chefs/{chefId}
           method: DELETE
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -78,7 +114,16 @@ functions:
       - http:
           path: /kitchen/orders/created
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -89,7 +134,16 @@ functions:
       - http:
           path: /kitchen/orders/{orderId}
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -100,7 +154,16 @@ functions:
       - http:
           path: /kitchen/orders
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST

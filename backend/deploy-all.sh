@@ -5,6 +5,10 @@
 # Deploya todos los 7 microservicios en orden correcto
 ###############################################################################
 
+# Cambiar al directorio del script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR" || exit 1
+
 # Colores para output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -64,18 +68,9 @@ check_prerequisites() {
   fi
   echo -e "${GREEN}✅ AWS CLI instalado${NC}"
   
-  # Verificar Serverless Framework (global o local)
-  if command -v serverless &> /dev/null; then
-    echo -e "${GREEN}✅ Serverless Framework instalado (global)${NC}"
-    SLS_CMD="serverless"
-  elif npx serverless --version &> /dev/null; then
-    echo -e "${GREEN}✅ Serverless Framework instalado (local)${NC}"
-    SLS_CMD="npx serverless"
-  else
-    echo -e "${RED}❌ Serverless Framework no está instalado${NC}"
-    echo -e "${YELLOW}Instalar con: npm install serverless@3 --save-dev${NC}"
-    exit 1
-  fi
+  # Verificar Serverless Framework (usar V3 para evitar problemas de autenticación)
+  echo -e "${GREEN}✅ Serverless Framework (usando V3)${NC}"
+  SLS_CMD="npx serverless@3"
   
   # Verificar credenciales AWS
   if ! aws sts get-caller-identity &> /dev/null; then

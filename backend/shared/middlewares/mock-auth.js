@@ -56,6 +56,11 @@ const requireRole = (allowedRoles) => {
       if (!user) {
         return {
           statusCode: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Credentials': true
+          },
           body: JSON.stringify({ error: 'Unauthorized' })
         };
       }
@@ -63,6 +68,11 @@ const requireRole = (allowedRoles) => {
       if (!allowedRoles.includes(user.role)) {
         return {
           statusCode: 403,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Credentials': true
+          },
           body: JSON.stringify({ error: 'Forbidden - Insufficient permissions' })
         };
       }

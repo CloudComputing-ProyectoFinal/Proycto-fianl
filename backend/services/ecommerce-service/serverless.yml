@@ -59,7 +59,16 @@ functions:
       - http:
           path: /auth/register
           method: POST
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
 
   login:
     handler: functions/auth/login.handler
@@ -67,7 +76,16 @@ functions:
       - http:
           path: /auth/login
           method: POST
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
 
   refreshToken:
     handler: functions/auth/refresh-token.handler
@@ -75,7 +93,16 @@ functions:
       - http:
           path: /auth/refresh-token
           method: POST
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -86,7 +113,16 @@ functions:
       - http:
           path: /auth/logout
           method: POST
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -100,7 +136,16 @@ functions:
       - http:
           path: /menu
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
 
   getCategory:
     handler: functions/menu/getCategory.handler
@@ -108,7 +153,16 @@ functions:
       - http:
           path: /menu/{category}
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
 
   getProduct:
     handler: functions/menu/getProduct.handler
@@ -116,11 +170,29 @@ functions:
       - http:
           path: /menu/product
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
       - http:
           path: /menu/items/{itemId}
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
 
   searchMenu:
     handler: functions/menu/search.handler
@@ -128,7 +200,16 @@ functions:
       - http:
           path: /menu/search
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
 
   listCategories:
     handler: functions/menu/listCategories.handler
@@ -136,7 +217,16 @@ functions:
       - http:
           path: /menu/categories
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
 
   # ============================================================================
   # ORDERS (CLIENTE)
@@ -147,7 +237,16 @@ functions:
       - http:
           path: /orders
           method: POST
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -158,7 +257,16 @@ functions:
       - http:
           path: /orders/{orderId}
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -169,7 +277,16 @@ functions:
       - http:
           path: /users/orders
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -180,7 +297,16 @@ functions:
       - http:
           path: /orders
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -191,7 +317,16 @@ functions:
       - http:
           path: /orders/{orderId}/cancel
           method: PUT
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -202,7 +337,16 @@ functions:
       - http:
           path: /orders/{orderId}
           method: PUT
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -216,7 +360,16 @@ functions:
       - http:
           path: /cart/validate
           method: POST
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -226,7 +379,16 @@ functions:
       - http:
           path: /cart
           method: POST
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -236,7 +398,16 @@ functions:
       - http:
           path: /cart
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -246,7 +417,16 @@ functions:
       - http:
           path: /cart
           method: DELETE
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -256,7 +436,16 @@ functions:
       - http:
           path: /cart
           method: PUT
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -266,7 +455,16 @@ functions:
       - http:
           path: /cart/item/{productId}
           method: DELETE
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -278,7 +476,16 @@ functions:
       - http:
           path: /menu/productos
           method: POST
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -289,7 +496,16 @@ functions:
       - http:
           path: /menu/items/{itemId}
           method: PUT
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -300,7 +516,16 @@ functions:
       - http:
           path: /menu/items/{itemId}/availability
           method: PUT
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -311,7 +536,16 @@ functions:
       - http:
           path: /menu/items/{itemId}
           method: DELETE
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -322,7 +556,16 @@ functions:
       - http:
           path: /menu/productos
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -333,7 +576,16 @@ functions:
       - http:
           path: /menu/productos/{productId}
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -345,7 +597,16 @@ functions:
       - http:
           path: /orders/{orderId}
           method: DELETE
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST

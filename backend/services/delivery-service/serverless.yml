@@ -32,7 +32,16 @@ functions:
       - http:
           path: /delivery/drivers/{driverId}
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -43,7 +52,16 @@ functions:
       - http:
           path: /delivery/drivers
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -54,7 +72,16 @@ functions:
       - http:
           path: /delivery/drivers/available
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -65,7 +92,16 @@ functions:
       - http:
           path: /delivery/orders/{orderId}/assign
           method: POST
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -80,7 +116,16 @@ functions:
       - http:
           path: /delivery/orders
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -91,7 +136,16 @@ functions:
       - http:
           path: /delivery/orders/{orderId}
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -102,7 +156,16 @@ functions:
       - http:
           path: /delivery/orders/{orderId}
           method: DELETE
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -113,7 +176,16 @@ functions:
       - http:
           path: /delivery/orders/{orderId}/tracking
           method: GET
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -125,7 +197,16 @@ functions:
       - http:
           path: /delivery/drivers/{driverId}
           method: PUT
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
@@ -136,7 +217,16 @@ functions:
       - http:
           path: /delivery/drivers/{driverId}
           method: DELETE
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: true
           authorizer:
             name: authorizer
             type: REQUEST
