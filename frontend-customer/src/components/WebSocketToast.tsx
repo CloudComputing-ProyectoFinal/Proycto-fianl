@@ -15,15 +15,47 @@ export function WebSocketToast() {
 
   useWebSocket({
     onMessage: (message) => {
-      // Crear notificación toast
+      // Ignorar mensajes de conexión
+      if (message.type === 'CONNECTION_STATUS') {
+        return;
+      }
+
+      // Extraer datos del mensaje (puede venir en message.data o directamente)
+      const data = message.data || message;
+
+      // Validar que tengamos los campos necesarios
+      const orderId = data.orderId || message.orderId || '';
+      const status = data.newStatus || data.status || message.status || '';
+      const msg = data.message || message.message || '';
+      const timestamp = data.timestamp || message.timestamp || new Date().toISOString();
+
+      // Solo mostrar toast si hay orderId válido
+      if (!orderId) {
+        console.log('🔔 Toast: Mensaje sin orderId ignorado');
+        return;
+      }
+
+      // Ignorar mensajes de error
+      if (
+        !status ||
+        status === 'UNKNOWN' ||
+        msg.toLowerCase().includes('forbidden') ||
+        msg.toLowerCase().includes('error') ||
+        msg.toLowerCase().includes('unauthorized')
+      ) {
+        console.log('🔔 Toast: Mensaje de error ignorado:', msg);
+        return;
+      }
+
       const notification: ToastNotification = {
-        id: `${Date.now()}-${Math.random()}`,
-        message: message.message,
-        orderId: message.orderId,
-        status: message.status,
-        timestamp: message.timestamp,
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        message: msg || 'Actualización de pedido',
+        orderId: orderId,
+        status: status,
+        timestamp: timestamp,
       };
 
+      console.log('🔔 Toast: Mostrando notificación', notification);
       setToast(notification);
 
       // Auto-ocultar después de 8 segundos
@@ -87,17 +119,24 @@ export function WebSocketToast() {
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 mb-1">
-            {toast.message}
+            {toast.message || 'Actualización de pedido'}
           </p>
           <p className="text-xs text-gray-600">
-            Pedido #{toast.orderId.substring(0, 8)}
+            Pedido #{toast.orderId ? toast.orderId.substring(0, 8) : 'N/A'}
           </p>
           <p className="text-xs text-gray-400 mt-1">
-            {new Date(toast.timestamp).toLocaleTimeString('es-ES', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            })}
+            {toast.timestamp
+              ? new Date(toast.timestamp).toLocaleTimeString('es-ES', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })
+              : new Date().toLocaleTimeString('es-ES', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })
+            }
           </p>
         </div>
 

@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Package, Clock, ChefHat, Box, Truck, CheckCircle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import * as ordersService from '../services/orders';
+import webSocketService from '../services/websocket';
 
 interface OrderItem {
   productId: string;
@@ -34,6 +35,17 @@ interface Order {
   updatedAt?: string;
 }
 
+// Mensajes de estado para notificaciones
+const STATUS_MESSAGES: Record<string, string> = {
+  'CREATED': '¡Pedido creado! Estamos procesando tu orden.',
+  'COOKING': '🍳 ¡Tu pedido está siendo preparado por nuestro chef!',
+  'PACKING': '📦 Tu pedido está siendo empacado.',
+  'READY': '✅ ¡Tu pedido está listo para entrega!',
+  'DELIVERING': '🏍️ ¡Tu pedido está en camino!',
+  'DELIVERED': '🎉 ¡Pedido entregado! ¡Buen provecho!',
+  'CANCELLED': '❌ Tu pedido ha sido cancelado.',
+};
+
 export function OrderTrackingPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
@@ -41,14 +53,18 @@ export function OrderTrackingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Referencia para tracking de estados anteriores (para detectar cambios)
+  const previousStatusesRef = useRef<Record<string, string>>({});
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // Cargar órdenes del usuario
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async (showLoading = true) => {
     if (!profile) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (showLoading) setLoading(true);
     setError(null);
     try {
       const response = await ordersService.getUserOrders();
@@ -56,6 +72,33 @@ export function OrderTrackingPage() {
 
       // La respuesta puede ser { orders: [...] } o directamente un array
       const ordersList = Array.isArray(response) ? response : (response.orders || []);
+
+      // Detectar cambios de estado y notificar
+      ordersList.forEach((order: Order) => {
+        const previousStatus = previousStatusesRef.current[order.orderId];
+        const currentStatus = order.status;
+
+        // Si hay un cambio de estado, simular notificación WebSocket
+        if (previousStatus && previousStatus !== currentStatus) {
+          console.log(`🔔 Estado cambió: ${order.orderId} de ${previousStatus} a ${currentStatus}`);
+
+          // Simular notificación local para que WebSocketNotifications la muestre
+          webSocketService.simulateNotification({
+            type: 'ORDER_STATUS_UPDATE',
+            data: {
+              orderId: order.orderId.replace('ORDER#', ''),
+              previousStatus,
+              newStatus: currentStatus,
+              timestamp: new Date().toISOString(),
+              message: STATUS_MESSAGES[currentStatus] || `Estado actualizado a ${currentStatus}`,
+            }
+          });
+        }
+
+        // Actualizar referencia de estado
+        previousStatusesRef.current[order.orderId] = currentStatus;
+      });
+
       setOrders(ordersList);
     } catch (err: any) {
       console.error('Error cargando órdenes:', err);
@@ -63,11 +106,34 @@ export function OrderTrackingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile]);
 
+  // Cargar órdenes inicialmente
   useEffect(() => {
     loadOrders();
-  }, [profile]);
+  }, [loadOrders]);
+
+  // Polling automático cada 10 segundos para detectar cambios
+  useEffect(() => {
+    // Solo hacer polling si hay órdenes activas (no entregadas ni canceladas)
+    const hasActiveOrders = orders.some(
+      order => !['DELIVERED', 'CANCELLED'].includes(order.status?.toUpperCase())
+    );
+
+    if (hasActiveOrders) {
+      console.log('🔄 Iniciando polling de órdenes (cada 10s)');
+      pollingIntervalRef.current = setInterval(() => {
+        loadOrders(false); // Sin mostrar loading
+      }, 10000); // Cada 10 segundos
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [orders, loadOrders]);
 
   const getStatusInfo = (status: string) => {
     switch (status?.toUpperCase()) {

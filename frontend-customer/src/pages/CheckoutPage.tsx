@@ -123,6 +123,7 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
       // Simular notificación local (el backend no envía evento OrderCreated a WebSocket)
       // Esto permite que el usuario vea la notificación en el panel
       if (order?.orderId) {
+        console.log('🔔 Creando notificación local para orden:', order.orderId);
         const localNotification = {
           type: 'ORDER_STATUS_UPDATE',
           data: {
@@ -133,8 +134,12 @@ export function CheckoutPage({ onNavigate }: CheckoutPageProps) {
             timestamp: new Date().toISOString(),
           }
         };
+        console.log('🔔 Disparando simulateNotification:', localNotification);
         // Disparar evento manual a los handlers del WebSocket
         webSocketService.simulateNotification(localNotification);
+        console.log('🔔 simulateNotification completado');
+      } else {
+        console.warn('⚠️ No se encontró orderId para notificación');
       }
 
       alert(`¡Pedido creado con éxito!\n\nID: #${orderIdShort}\nTotal: ${totalAmount}\nEstado: ${orderStatus}\nPago: ${payment?.status || 'Procesado'}\nTransacción: ${payment?.transactionId || 'N/A'}\n\n¡Tu pedido está siendo preparado!`);
