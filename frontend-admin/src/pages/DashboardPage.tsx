@@ -90,60 +90,60 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-red-50">
       {/* Tabs de navegación según rol */}
       {role === 'ADMIN' && (
         <div className="container mx-auto px-4 py-6">
-          <div className="flex space-x-4 mb-6">
+          <div className="flex flex-wrap gap-3 mb-6">
             <button
               onClick={() => navigate('/dashboard/admin/stats')}
-              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+              className={`px-8 py-3 rounded-xl font-black uppercase transition-all transform hover:scale-105 shadow-lg ${
                 activeTab === 'admin'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-red-600 text-white border-4 border-white'
+                  : 'bg-white text-gray-700 hover:bg-red-50 border-2 border-gray-200'
               }`}
             >
-              Vista General
+              📊 Vista General
             </button>
             <button
               onClick={() => navigate('/dashboard/chef-executive')}
-              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+              className={`px-8 py-3 rounded-xl font-black uppercase transition-all transform hover:scale-105 shadow-lg ${
                 activeTab === 'chef-executive'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-red-600 text-white border-4 border-white'
+                  : 'bg-white text-gray-700 hover:bg-red-50 border-2 border-gray-200'
               }`}
             >
-              Chef Ejecutivo
+              👨‍🍳 Chef Ejecutivo
             </button>
             <button
               onClick={() => navigate('/dashboard/kitchen')}
-              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+              className={`px-8 py-3 rounded-xl font-black uppercase transition-all transform hover:scale-105 shadow-lg ${
                 activeTab === 'kitchen'
-                  ? 'bg-orange-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-red-600 text-white border-4 border-white'
+                  : 'bg-white text-gray-700 hover:bg-red-50 border-2 border-gray-200'
               }`}
             >
-              Cocina
+              🍳 Cocina
             </button>
             <button
               onClick={() => navigate('/dashboard/packing')}
-              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+              className={`px-8 py-3 rounded-xl font-black uppercase transition-all transform hover:scale-105 shadow-lg ${
                 activeTab === 'packing'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-red-600 text-white border-4 border-white'
+                  : 'bg-white text-gray-700 hover:bg-red-50 border-2 border-gray-200'
               }`}
             >
-              Empaquetado
+              📦 Empaquetado
             </button>
             <button
               onClick={() => navigate('/dashboard/delivery')}
-              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+              className={`px-8 py-3 rounded-xl font-black uppercase transition-all transform hover:scale-105 shadow-lg ${
                 activeTab === 'delivery'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-red-600 text-white border-4 border-white'
+                  : 'bg-white text-gray-700 hover:bg-red-50 border-2 border-gray-200'
               }`}
             >
-              Delivery
+              🚚 Delivery
             </button>
           </div>
         </div>

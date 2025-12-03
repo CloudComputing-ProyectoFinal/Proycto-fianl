@@ -140,30 +140,47 @@ export function KitchenDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-purple-600 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-8 text-white">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Sparkles className="animate-pulse" size={32} />
-            Panel de Cocina Elite
-          </h2>
-          <ChefHat className="animate-bounce" size={40} />
-        </div>
-        <p className="text-white/90">
-          Bienvenido, <strong className="text-yellow-300">{profile?.firstName || 'Chef'}</strong> 🔥
-        </p>
-        <div className="flex gap-4 mt-3 text-sm">
-          <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur">
-            🆕 Nuevas: {createdOrders.length}
-          </span>
-          <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur">
-            📋 Asignadas: {assignedOrders.length}
-          </span>
-          <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur">
-            🍳 En proceso: {preparingOrders.length + cookingOrders.length}
-          </span>
-          <span className="bg-white/20 px-3 py-1 rounded-full backdrop-blur">
-            ✅ Listas: {readyOrders.length}
-          </span>
+      <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl shadow-2xl p-8 text-white border-4 border-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMC41IiBvcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-20"></div>
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white p-3 rounded-xl">
+                <ChefHat size={40} className="text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-4xl font-black tracking-tight uppercase">TGI COCINA</h2>
+                <p className="text-red-100 font-semibold">Panel de Control Chef</p>
+              </div>
+            </div>
+            <button 
+              onClick={loadAllData}
+              className="bg-white text-red-600 px-6 py-3 rounded-xl font-black hover:bg-red-50 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105"
+            >
+              🔄 ACTUALIZAR
+            </button>
+          </div>
+          <p className="text-white text-lg mb-4">
+            Bienvenido, <strong className="text-yellow-300">{profile?.firstName || 'Chef'}</strong> 🔥
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white/20 backdrop-blur-sm px-4 py-3 rounded-xl border-2 border-white/30">
+              <div className="text-3xl font-black">{createdOrders.length}</div>
+              <div className="text-sm font-semibold text-red-100">🆕 Nuevas</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm px-4 py-3 rounded-xl border-2 border-white/30">
+              <div className="text-3xl font-black">{assignedOrders.length}</div>
+              <div className="text-sm font-semibold text-red-100">📋 Asignadas</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm px-4 py-3 rounded-xl border-2 border-white/30">
+              <div className="text-3xl font-black">{preparingOrders.length + cookingOrders.length}</div>
+              <div className="text-sm font-semibold text-red-100">🍳 En Proceso</div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm px-4 py-3 rounded-xl border-2 border-white/30">
+              <div className="text-3xl font-black">{readyOrders.length}</div>
+              <div className="text-sm font-semibold text-red-100">✅ Listas</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -183,13 +200,18 @@ export function KitchenDashboard() {
               createdOrders.map((order) => (
                 <div
                   key={order.orderId}
-                  className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  className="bg-white border-4 border-red-500 rounded-2xl p-5 shadow-2xl hover:shadow-red-200 transition-all duration-300 hover:scale-105 transform"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-bold text-gray-900 text-sm">
-                      #{order.orderId.replace('ORDER#', '').slice(0, 8)}
-                    </h4>
-                    <Sparkles size={16} className="text-purple-600 animate-spin" style={{ animationDuration: '3s' }} />
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-red-600 p-2 rounded-lg">
+                        <Sparkles size={16} className="text-white animate-pulse" />
+                      </div>
+                      <h4 className="font-black text-gray-900 text-base">
+                        #{order.orderId.replace('ORDER#', '').slice(0, 8)}
+                      </h4>
+                    </div>
+                    <span className="px-3 py-1 bg-red-600 text-white rounded-full text-xs font-black uppercase">¡NUEVA!</span>
                   </div>
                   <div className="text-xs text-gray-600 mb-2 space-y-1">
                     {order.items.map((item, idx) => (
@@ -211,10 +233,10 @@ export function KitchenDashboard() {
                   </p>
                   <button
                     onClick={() => handleAcceptOrder(order.orderId)}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 text-sm shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                    className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-3.5 rounded-xl font-black uppercase text-sm hover:from-red-700 hover:to-red-800 shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 border-2 border-white"
                   >
-                    <Star size={16} className="animate-pulse" />
-                    Aceptar Orden
+                    <Star size={18} className="fill-white" />
+                    ¡ACEPTAR ORDEN!
                   </button>
                 </div>
               ))

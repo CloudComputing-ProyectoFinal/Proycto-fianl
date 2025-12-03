@@ -125,31 +125,43 @@ export function ChefExecutiveDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Chef Ejecutivo - Gestión de Cocina</h1>
+      <div className="bg-gradient-to-r from-red-700 to-red-800 rounded-2xl shadow-2xl p-8 text-white border-4 border-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-white p-3 rounded-xl">
+              <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-4xl font-black uppercase tracking-tight">CHEF EJECUTIVO</h1>
+              <p className="text-red-100 font-semibold">Gestión de Cocina</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-4 border-b">
+      <div className="flex gap-3">
         <button
           onClick={() => setActiveTab('orders')}
-          className={`px-6 py-3 font-medium transition-all ${
+          className={`px-8 py-4 font-black uppercase rounded-xl transition-all shadow-lg transform hover:scale-105 ${
             activeTab === 'orders'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
+              ? 'bg-red-600 text-white border-4 border-white'
+              : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-red-600'
           }`}
         >
-          Órdenes ({orders.length})
+          🍳 Órdenes ({orders.length})
         </button>
         <button
           onClick={() => setActiveTab('chefs')}
-          className={`px-6 py-3 font-medium transition-all ${
+          className={`px-8 py-4 font-black uppercase rounded-xl transition-all shadow-lg transform hover:scale-105 ${
             activeTab === 'chefs'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
+              ? 'bg-red-600 text-white border-4 border-white'
+              : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-red-600'
           }`}
         >
-          Chefs ({chefs.length})
+          👨‍🍳 Chefs ({chefs.length})
         </button>
       </div>
 
@@ -170,14 +182,21 @@ export function ChefExecutiveDashboard() {
                 {orders.map((order) => (
                   <div
                     key={order.orderId}
-                    className="bg-gradient-to-br from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                    className="bg-white border-4 border-red-400 rounded-2xl p-6 shadow-2xl hover:shadow-red-200 transition-all duration-300 hover:scale-105 transform"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-gray-900">
-                        #{order.orderId.replace('ORDER#', '').slice(0, 8)}
-                      </h3>
-                      <span className="bg-orange-200 text-orange-800 px-3 py-1 rounded-full text-xs font-bold">
-                        PREPARING
+                      <div className="flex items-center gap-2">
+                        <div className="bg-red-600 p-2 rounded-lg">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="font-black text-gray-900 text-lg">
+                          #{order.orderId.replace('ORDER#', '').slice(0, 8)}
+                        </h3>
+                      </div>
+                      <span className="bg-yellow-400 text-gray-900 px-4 py-2 rounded-full text-xs font-black uppercase">
+                        PREPARANDO
                       </span>
                     </div>
                     

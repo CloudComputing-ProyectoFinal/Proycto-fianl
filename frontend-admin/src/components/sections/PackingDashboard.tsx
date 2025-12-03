@@ -83,27 +83,39 @@ export function PackingDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl shadow-lg p-8 text-white">
-        <div className="flex items-center gap-4">
-          <Package className="w-12 h-12" />
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard de Empaquetado</h1>
-            <p className="text-blue-100 mt-1">
-              Órdenes listas para empaquetar
-            </p>
+      <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-2xl shadow-2xl p-8 text-white border-4 border-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-white p-3 rounded-xl">
+              <Package className="w-12 h-12 text-red-600" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-black uppercase tracking-tight">EMPAQUETADO</h1>
+              <p className="text-red-100 font-semibold">
+                🎁 Órdenes listas para empaquetar
+              </p>
+            </div>
           </div>
+          <button
+            onClick={loadOrders}
+            className="bg-white text-red-600 px-6 py-3 rounded-xl font-black hover:bg-red-50 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105"
+          >
+            🔄 ACTUALIZAR
+          </button>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border-4 border-red-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-600 text-sm font-medium">Órdenes Listas</p>
-              <p className="text-3xl font-bold text-blue-600 mt-1">{readyOrders.length}</p>
+              <p className="text-gray-600 text-sm font-bold uppercase">Órdenes Listas</p>
+              <p className="text-5xl font-black text-red-600 mt-2">{readyOrders.length}</p>
             </div>
-            <Package className="w-12 h-12 text-blue-600" />
+            <div className="bg-red-600 p-4 rounded-xl">
+              <Package className="w-16 h-16 text-white" />
+            </div>
           </div>
         </div>
       </div>
@@ -124,18 +136,20 @@ export function PackingDashboard() {
             {readyOrders.map((order) => (
               <div
                 key={order.orderId}
-                className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl shadow-lg p-6 border-2 border-blue-200 hover:shadow-xl transition-all"
+                className="bg-white rounded-2xl shadow-2xl p-6 border-4 border-green-400 hover:border-green-600 hover:shadow-green-200 transition-all transform hover:scale-105"
               >
                 {/* Order Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <Package className="w-6 h-6 text-blue-600" />
-                    <span className="font-bold text-gray-800 text-lg">
-                      {order.orderId.split('#')[1]?.substring(0, 8) || order.orderId}
+                    <div className="bg-green-500 p-2 rounded-lg">
+                      <Package className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="font-black text-gray-800 text-lg">
+                      #{order.orderId.split('#')[1]?.substring(0, 8) || order.orderId}
                     </span>
                   </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                    LISTA
+                  <span className="px-4 py-2 bg-green-500 text-white rounded-full text-xs font-black uppercase">
+                    ✅ LISTA
                   </span>
                 </div>
 
@@ -175,10 +189,10 @@ export function PackingDashboard() {
                 {/* Action Button */}
                 <button
                   onClick={() => handleMarkPacked(order.orderId)}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                  className="w-full py-4 px-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-black uppercase text-sm hover:from-red-700 hover:to-red-800 transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transform hover:scale-105 border-2 border-white"
                 >
-                  <CheckCircle2 className="w-5 h-5" />
-                  Marcar como Empaquetado
+                  <CheckCircle2 className="w-6 h-6" />
+                  ¡EMPAQUETADO!
                 </button>
 
                 {/* Timestamp */}

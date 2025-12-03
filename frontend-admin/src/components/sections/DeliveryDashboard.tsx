@@ -126,31 +126,39 @@ export function DeliveryDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-3xl font-bold flex items-center">
-            <Truck className="mr-3" size={36} />
-            Panel de Delivery
-          </h2>
-          <button
-            onClick={loadCurrentOrder}
-            className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-          >
-            🔄 Actualizar
-          </button>
+      <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-2xl shadow-2xl p-8 text-white border-4 border-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMC41IiBvcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-20"></div>
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-4">
+              <div className="bg-white p-3 rounded-xl">
+                <Truck size={40} className="text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-4xl font-black tracking-tight uppercase">TGI DELIVERY</h2>
+                <p className="text-red-100 font-semibold">Panel de Repartidor</p>
+              </div>
+            </div>
+            <button
+              onClick={loadCurrentOrder}
+              className="bg-white text-red-600 px-6 py-3 rounded-xl font-black hover:bg-red-50 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105"
+            >
+              🔄 ACTUALIZAR
+            </button>
+          </div>
+          <p className="text-white text-lg">
+            Bienvenido, <strong className="text-yellow-300">{profile?.firstName || user?.nombre || 'Conductor'}</strong> 🚚
+          </p>
         </div>
-        <p className="text-blue-100">
-          Bienvenido, <strong>{profile?.firstName || user?.nombre || 'Conductor'}</strong>
-        </p>
       </div>
 
       {/* Orden Actual */}
       {currentOrder ? (
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-blue-200">
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-4 border-red-400">
+          <div className="bg-gradient-to-r from-red-600 to-red-700 p-6 text-white">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-2xl font-bold flex items-center">
-                <Navigation className="mr-2" size={28} />
+              <h3 className="text-3xl font-black uppercase flex items-center">
+                <Navigation className="mr-3" size={32} />
                 Orden Activa
               </h3>
               <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(currentOrder.status)}`}>
