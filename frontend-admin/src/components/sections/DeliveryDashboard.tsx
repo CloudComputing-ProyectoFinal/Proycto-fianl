@@ -10,6 +10,8 @@ export function DeliveryDashboard() {
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
+  
+  const isAdmin = profile?.role === 'ADMIN';
 
   useEffect(() => {
     console.log('[DeliveryDashboard] mount', { user, profile });
@@ -254,29 +256,37 @@ export function DeliveryDashboard() {
 
             {/* Acciones */}
             <div className="pt-4">
-              {(currentOrder.status === 'ASSIGNED' || currentOrder.status === 'PACKED') && (
-                <button
-                  onClick={handleStartDelivery}
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-5 rounded-xl font-bold text-xl flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105"
-                >
-                  <Truck size={28} />
-                  <span>🚚 Iniciar Entrega</span>
-                </button>
-              )}
-              {currentOrder.status === 'DELIVERING' && (
-                <button
-                  onClick={handleMarkDelivered}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-5 rounded-xl font-bold text-xl flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105"
-                >
-                  <CheckCircle size={28} />
-                  <span>✅ Marcar como Entregada</span>
-                </button>
-              )}
-              {currentOrder.status === 'DELIVERED' && (
-                <div className="w-full bg-green-50 border-2 border-green-300 text-green-800 py-5 rounded-xl font-bold text-xl flex items-center justify-center space-x-3">
-                  <CheckCircle size={28} />
-                  <span>✅ Orden Entregada</span>
+              {isAdmin ? (
+                <div className="w-full bg-gray-100 border-2 border-gray-300 text-gray-600 py-5 rounded-xl font-bold text-xl flex items-center justify-center space-x-3">
+                  👁️ SOLO VISUALIZACIÓN - ADMIN
                 </div>
+              ) : (
+                <>
+                  {(currentOrder.status === 'ASSIGNED' || currentOrder.status === 'PACKED') && (
+                    <button
+                      onClick={handleStartDelivery}
+                      className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-5 rounded-xl font-bold text-xl flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105"
+                    >
+                      <Truck size={28} />
+                      <span>🚚 Iniciar Entrega</span>
+                    </button>
+                  )}
+                  {currentOrder.status === 'DELIVERING' && (
+                    <button
+                      onClick={handleMarkDelivered}
+                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-5 rounded-xl font-bold text-xl flex items-center justify-center space-x-3 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105"
+                    >
+                      <CheckCircle size={28} />
+                      <span>✅ Marcar como Entregada</span>
+                    </button>
+                  )}
+                  {currentOrder.status === 'DELIVERED' && (
+                    <div className="w-full bg-green-50 border-2 border-green-300 text-green-800 py-5 rounded-xl font-bold text-xl flex items-center justify-center space-x-3">
+                      <CheckCircle size={28} />
+                      <span>✅ Orden Entregada</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

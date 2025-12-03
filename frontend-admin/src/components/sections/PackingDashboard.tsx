@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Package, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { getAllOrders, markOrderPacked } from '../../services/packing.ts';
 
 interface Order {
@@ -27,8 +28,11 @@ interface OrderItem {
 }
 
 export function PackingDashboard() {
+  const { profile } = useAuth();
   const [readyOrders, setReadyOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const isAdmin = profile?.role === 'ADMIN';
 
   useEffect(() => {
     loadOrders();
@@ -187,13 +191,19 @@ export function PackingDashboard() {
                 </div>
 
                 {/* Action Button */}
-                <button
-                  onClick={() => handleMarkPacked(order.orderId)}
-                  className="w-full py-4 px-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-black uppercase text-sm hover:from-red-700 hover:to-red-800 transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transform hover:scale-105 border-2 border-white"
-                >
-                  <CheckCircle2 className="w-6 h-6" />
-                  ¡EMPAQUETADO!
-                </button>
+                {isAdmin ? (
+                  <div className="w-full py-4 px-4 bg-gray-100 border-2 border-gray-300 text-gray-600 rounded-xl font-bold uppercase text-sm flex items-center justify-center gap-2">
+                    👁️ SOLO VISUALIZACIÓN
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleMarkPacked(order.orderId)}
+                    className="w-full py-4 px-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl font-black uppercase text-sm hover:from-red-700 hover:to-red-800 transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-2xl transform hover:scale-105 border-2 border-white"
+                  >
+                    <CheckCircle2 className="w-6 h-6" />
+                    ¡EMPAQUETADO!
+                  </button>
+                )}
 
                 {/* Timestamp */}
                 <p className="text-xs text-gray-500 mt-3 text-center">

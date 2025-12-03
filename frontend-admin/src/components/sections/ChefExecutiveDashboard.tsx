@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import chefExecutiveService from '../../services/chefExecutive';
 import type { KitchenOrder, Chef } from '../../services/chefExecutive';
 
 export function ChefExecutiveDashboard() {
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<'orders' | 'chefs'>('orders');
   const [loading, setLoading] = useState(true);
+  
+  const isAdmin = profile?.role === 'ADMIN';
   
   // Orders state
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
@@ -230,15 +234,25 @@ export function ChefExecutiveDashboard() {
                       {new Date(order.createdAt).toLocaleString('es-PE')}
                     </p>
                     
-                    <button
-                      onClick={() => handleMarkReady(order.orderId)}
-                      className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-lg font-bold hover:from-green-600 hover:to-green-700 shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Marcar como Lista
-                    </button>
+                    {isAdmin ? (
+                      <div className="w-full bg-gray-100 border-2 border-gray-300 text-gray-600 py-3 rounded-lg font-bold text-center flex items-center justify-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        SOLO VISUALIZACIÓN
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleMarkReady(order.orderId)}
+                        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-lg font-bold hover:from-green-600 hover:to-green-700 shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Marcar como Lista
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
