@@ -8,8 +8,10 @@ export function AdminOrders() {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      console.log('[AdminOrders] fetching orders list...');
       try {
         const res = await adminService.listOrders();
+        console.log('[AdminOrders] fetch result:', res);
         const data = res?.data || res || [];
         if (mounted) setOrders(data);
       } catch (err) {
@@ -23,6 +25,7 @@ export function AdminOrders() {
 
   const updateStatus = async (id: string, status: string) => {
     try {
+      console.log('[AdminOrders] updateStatus', { id, status });
       await adminService.updateOrderStatus(id, { status });
       setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
     } catch (err) {

@@ -12,6 +12,7 @@ export function UserDashboard() {
     const readLocalCart = () => {
       try {
         const raw = localStorage.getItem('cart');
+        console.log('[UserDashboard] readLocalCart raw:', raw);
         if (!raw) {
           setCartCount(hookItemCount || 0);
           return;
@@ -29,6 +30,7 @@ export function UserDashboard() {
     };
 
     readLocalCart();
+    console.log('[UserDashboard] mount, initial cartCount', cartCount);
 
     // listen for storage events (other tabs)
     const onStorage = (e: StorageEvent) => {

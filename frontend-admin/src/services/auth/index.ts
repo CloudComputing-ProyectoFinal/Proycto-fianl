@@ -11,10 +11,20 @@ export const login = async (credentials: AuthRequest) => {
         },
         body: JSON.stringify(credentials),
     });
+    const json = await response.json();
     if (!response.ok) {
-        throw new Error("Login failed");
+        // support nested message
+        throw new Error(json?.message || json?.data?.message || 'Login failed');
     }
-    return response.json() as Promise<AuthResponse>;
+
+    // Normalize response: support both top-level and nested `data` responses
+    const token = json.token || json?.data?.token;
+    const user = json.user || json?.data?.user;
+    return {
+        message: json.message || json?.data?.message || '',
+        token,
+        user,
+    } as AuthResponse;
 }
 
 export const register = async (data: AuthRegisterRequest) => {
@@ -25,8 +35,16 @@ export const register = async (data: AuthRegisterRequest) => {
         },
         body: JSON.stringify(data),
     });
+    const json = await response.json();
     if (!response.ok) {
-        throw new Error("Registration failed");
+        throw new Error(json?.message || json?.data?.message || 'Registration failed');
     }
-    return response.json() as Promise<AuthResponse>;
+
+    const token = json.token || json?.data?.token;
+    const user = json.user || json?.data?.user;
+    return {
+        message: json.message || json?.data?.message || '',
+        token,
+        user,
+    } as AuthResponse;
 }

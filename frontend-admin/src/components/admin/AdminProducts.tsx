@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchFood, fetchFoodByCategory, createProduct, updateProduct, toggleProductAvailability } from '../../services/food';
+import adminService from '../../services/admin';
 import type { ProductApi } from '../../lib/menu.types';
 
 export function AdminProducts() {
@@ -23,8 +23,29 @@ export function AdminProducts() {
   const loadProducts = async (cat?: string) => {
     setLoading(true);
     try {
-      const res = cat && cat !== 'ALL' ? await fetchFoodByCategory(cat) : await fetchFood();
-      setProducts(res.products || []);
+      console.log('[AdminProducts] loadProducts start', { category: cat });
+      // Use admin endpoint to list products
+      const res = await adminService.listProducts();
+      console.log('[AdminProducts] loadProducts result', res);
+
+      const items = res?.products ?? [];
+      // Normalize backend product shape to ProductApi expected by UI
+      const normalized = items.map((p: any) => ({
+        imageUrl: p.imageUrl ?? p.image_url ?? '',
+        available: (p.isAvailable !== undefined) ? p.isAvailable : (p.available ?? false),
+        updatedAt: p.updatedAt ?? p.updated_at ?? '',
+        tenantId: p.tenant_id ?? p.tenantId ?? '',
+        category: p.category ?? '',
+        createdAt: p.createdAt ?? p.created_at ?? '',
+        price: p.price ?? 0,
+        description: p.description ?? '',
+        ingredients: p.ingredients ?? [],
+        name: p.name ?? '',
+        preparationTime: p.preparationTimeMinutes ?? p.preparationTime ?? 0,
+        productId: p.productId ?? p.product_id ?? p.id ?? '',
+      })) as ProductApi[];
+
+      setProducts(normalized);
     } catch (err) {
       console.error('loadProducts', err);
     } finally {
@@ -37,6 +58,7 @@ export function AdminProducts() {
   }, [category]);
 
   const openCreateModal = () => {
+    console.log('[AdminProducts] openCreateModal');
     setEditingProduct(null);
     setFormData({
       name: '',
@@ -53,6 +75,7 @@ export function AdminProducts() {
   };
 
   const openEditModal = (product: ProductApi) => {
+    console.log('[AdminProducts] openEditModal', product.productId);
     setEditingProduct(product);
     setFormData({
       name: product.name,
@@ -71,9 +94,10 @@ export function AdminProducts() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log('[AdminProducts] handleSubmit', { editing: !!editingProduct, formData });
       if (editingProduct) {
-        // Editar
-        await updateProduct(editingProduct.productId, {
+        // Editar via admin service
+        await adminService.updateProduct(editingProduct.productId, {
           name: formData.name,
           price: formData.price,
           description: formData.description,
@@ -83,8 +107,9 @@ export function AdminProducts() {
           tags: formData.tags,
         });
       } else {
-        // Crear
-        await createProduct(formData);
+        // Crear via admin service
+        const created = await adminService.createProduct(formData as any);
+        console.log('[AdminProducts] create result', created);
       }
       setShowModal(false);
       loadProducts(category);
@@ -96,7 +121,9 @@ export function AdminProducts() {
 
   const handleToggleAvailability = async (product: ProductApi) => {
     try {
-      await toggleProductAvailability(product.productId, !product.available);
+      console.log('[AdminProducts] toggleAvailability', product.productId, !product.available);
+      // Use admin update endpoint to toggle availability
+      await adminService.updateProduct(product.productId, { isAvailable: !product.available });
       setProducts(prev => prev.map(p => 
         p.productId === product.productId ? { ...p, available: !p.available } : p
       ));
@@ -106,7 +133,46 @@ export function AdminProducts() {
     }
   };
 
-  if (loading) return <div className="p-4">Cargando productos...</div>;
+  const handleDeleteProduct = async (product: ProductApi) => {
+    if (!confirm(`¿Estás seguro de eliminar "${product.name}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    try {
+      console.log('[AdminProducts] deleteProduct', product.productId);
+      await adminService.deleteProduct(product.productId);
+      // Remove from local state
+      setProducts(prev => prev.filter(p => p.productId !== product.productId));
+      alert('Producto eliminado exitosamente');
+    } catch (err) {
+      console.error('deleteProduct', err);
+      alert(`Error al eliminar: ${err}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-6">
+        <div className="relative">
+          {/* Círculo exterior giratorio */}
+          <div className="w-20 h-20 border-4 border-red-200 rounded-full animate-spin border-t-red-600"></div>
+          {/* Círculo interior pulsante */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 bg-red-600 rounded-full animate-pulse opacity-20"></div>
+          </div>
+          {/* Icono central */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-semibold text-gray-700 animate-pulse">Cargando productos</p>
+          <p className="text-sm text-gray-500 mt-1">Obteniendo información del menú...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -161,6 +227,9 @@ export function AdminProducts() {
                 <td className="p-3 space-x-2">
                   <button onClick={() => openEditModal(p)} className="text-blue-600 hover:underline">
                     Editar
+                  </button>
+                  <button onClick={() => handleDeleteProduct(p)} className="text-red-600 hover:underline">
+                    Eliminar
                   </button>
                 </td>
               </tr>

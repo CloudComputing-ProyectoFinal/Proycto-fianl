@@ -1,36 +1,62 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 // import { AdminDashboard } from '../components/sections/AdminDashboard';
 import { KitchenDashboard } from '../components/sections/KitchenDashboard';
+import { ChefExecutiveDashboard } from '../components/sections/ChefExecutiveDashboard';
 import { DeliveryDashboard } from '../components/sections/DeliveryDashboard';
+import { PackingDashboard } from '../components/sections/PackingDashboard';
 import { UserDashboard } from '../components/sections/UserDashboard';
 import { AdminStats } from '../components/admin/AdminStats';
 import { AdminProducts } from '../components/admin/AdminProducts';
-import { AdminOrders } from '../components/admin/AdminOrders';
 import { AdminUsers } from '../components/admin/AdminUsers';
+import { AdminDrivers } from '../components/admin/AdminDrivers';
 
 export function DashboardPage() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
+  const { section } = useParams<{ section?: string }>();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('');
-  const [adminSubTab, setAdminSubTab] = useState<'stats' | 'products' | 'orders' | 'users'>('stats');
+  const [adminSubTab, setAdminSubTab] = useState<'stats' | 'products' | 'users' | 'drivers'>('stats');
 
+  // Detectar la pestaña activa según la URL
   useEffect(() => {
-    if (profile) {
+    const path = location.pathname;
+    
+    if (path.includes('/dashboard/kitchen')) {
+      setActiveTab('kitchen');
+    } else if (path.includes('/dashboard/chef-executive')) {
+      setActiveTab('chef-executive');
+    } else if (path.includes('/dashboard/packing')) {
+      setActiveTab('packing');
+    } else if (path.includes('/dashboard/delivery')) {
+      setActiveTab('delivery');
+    } else if (path.includes('/dashboard/admin')) {
+      setActiveTab('admin');
+      // Detectar sub-pestaña de admin desde el parámetro :section
+      if (section) {
+        setAdminSubTab(section as 'stats' | 'products' | 'users' | 'drivers');
+      }
+    } else if (profile) {
+      // Default según rol cuando está en /dashboard o /
       const role = profile.role?.toUpperCase() || '';
-      
-      // Redirigir automáticamente según el rol
+      console.log('🔍 [DashboardPage] Profile role:', profile.role, '→ Uppercase:', role);
       if (role === 'ADMIN') {
-        setActiveTab('admin');
+        navigate('/dashboard/admin/stats', { replace: true });
+      } else if (role === 'CHEF_EXECUTIVE') {
+        navigate('/dashboard/chef-executive', { replace: true });
       } else if (role === 'COOK') {
-        setActiveTab('kitchen');
+        navigate('/dashboard/kitchen', { replace: true });
+      } else if (role === 'PACKER') {
+        navigate('/dashboard/packing', { replace: true });
       } else if (role === 'DISPATCHER') {
-        setActiveTab('delivery');
+        navigate('/dashboard/delivery', { replace: true });
       } else if (role === 'USER') {
-        // Mostrar vista de usuario dentro del dashboard
         setActiveTab('user');
       }
     }
-  }, [profile]);
+  }, [location.pathname, section, profile, navigate]);
 
   if (!profile) {
     return (
@@ -41,41 +67,36 @@ export function DashboardPage() {
   }
 
   const role = profile.role?.toUpperCase() || '';
+  
+  // Protección: usuarios normales van a su dashboard
   if (role === 'USER') {
     return <UserDashboard />;
   }
-
-  const getRoleDisplay = () => {
-    const role = profile?.role?.toUpperCase() || '';
-    const roleMap: Record<string, string> = {
-      'ADMIN': 'Administrador',
-      'COOK': 'Cocinero',
-      'DISPATCHER': 'Repartidor',
-      'USER': 'Cliente',
-    };
-    return roleMap[role] || role;
-  };
+  
+  // Protección: roles no-admin SOLO pueden ver su propio dashboard
+  if (role !== 'ADMIN') {
+    if (role === 'CHEF_EXECUTIVE') {
+      return <ChefExecutiveDashboard />;
+    }
+    if (role === 'COOK') {
+      return <KitchenDashboard />;
+    }
+    if (role === 'PACKER') {
+      return <PackingDashboard />;
+    }
+    if (role === 'DISPATCHER') {
+      return <DeliveryDashboard />;
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-black text-white py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-              <p className="text-gray-300">
-                Bienvenido, <strong>{profile?.firstName || profile?.nombre || 'Usuario'}</strong> - {getRoleDisplay()}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      {/* Tabs de navegación según rol */}
       {role === 'ADMIN' && (
         <div className="container mx-auto px-4 py-6">
           <div className="flex space-x-4 mb-6">
             <button
-              onClick={() => setActiveTab('admin')}
+              onClick={() => navigate('/dashboard/admin/stats')}
               className={`px-6 py-2 rounded-lg font-medium transition-all ${
                 activeTab === 'admin'
                   ? 'bg-red-600 text-white'
@@ -85,17 +106,37 @@ export function DashboardPage() {
               Vista General
             </button>
             <button
-              onClick={() => setActiveTab('kitchen')}
+              onClick={() => navigate('/dashboard/chef-executive')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'chef-executive'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Chef Ejecutivo
+            </button>
+            <button
+              onClick={() => navigate('/dashboard/kitchen')}
               className={`px-6 py-2 rounded-lg font-medium transition-all ${
                 activeTab === 'kitchen'
-                  ? 'bg-red-600 text-white'
+                  ? 'bg-orange-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
               Cocina
             </button>
             <button
-              onClick={() => setActiveTab('delivery')}
+              onClick={() => navigate('/dashboard/packing')}
+              className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                activeTab === 'packing'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              Empaquetado
+            </button>
+            <button
+              onClick={() => navigate('/dashboard/delivery')}
               className={`px-6 py-2 rounded-lg font-medium transition-all ${
                 activeTab === 'delivery'
                   ? 'bg-red-600 text-white'
@@ -111,38 +152,53 @@ export function DashboardPage() {
       <div className="container mx-auto px-4 pb-8">
         {activeTab === 'admin' && (
           <div className="space-y-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <button
-                onClick={() => setActiveTab('admin')}
-                className={`px-4 py-2 rounded ${'hidden'}`} // placeholder to keep existing UI
-              />
-            </div>
-
-            {/* Admin sub-tabs: Stats / Products (rendered inside dashboard) */}
+            {/* Admin sub-tabs: Stats / Products / Orders / Users */}
             <div className="bg-white p-4 rounded-lg shadow mb-4">
               <div className="flex space-x-3 flex-wrap">
-                <button onClick={() => setAdminSubTab('stats')} className={`px-4 py-2 rounded ${adminSubTab === 'stats' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
+                <button 
+                  onClick={() => navigate('/dashboard/admin/stats')} 
+                  className={`px-4 py-2 rounded font-medium transition-all ${
+                    adminSubTab === 'stats' ? 'bg-red-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                >
                   Estadísticas
                 </button>
-                <button onClick={() => setAdminSubTab('products')} className={`px-4 py-2 rounded ${adminSubTab === 'products' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
+                <button 
+                  onClick={() => navigate('/dashboard/admin/products')} 
+                  className={`px-4 py-2 rounded font-medium transition-all ${
+                    adminSubTab === 'products' ? 'bg-red-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                >
                   Productos
                 </button>
-                <button onClick={() => setAdminSubTab('orders')} className={`px-4 py-2 rounded ${adminSubTab === 'orders' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
-                  Órdenes
-                </button>
-                <button onClick={() => setAdminSubTab('users')} className={`px-4 py-2 rounded ${adminSubTab === 'users' ? 'bg-red-600 text-white' : 'bg-gray-100'}`}>
+                <button 
+                  onClick={() => navigate('/dashboard/admin/users')} 
+                  className={`px-4 py-2 rounded font-medium transition-all ${
+                    adminSubTab === 'users' ? 'bg-red-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                >
                   Usuarios
+                </button>
+                <button 
+                  onClick={() => navigate('/dashboard/admin/drivers')} 
+                  className={`px-4 py-2 rounded font-medium transition-all ${
+                    adminSubTab === 'drivers' ? 'bg-red-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                >
+                  Conductores
                 </button>
               </div>
             </div>
 
             {adminSubTab === 'stats' && <AdminStats />}
             {adminSubTab === 'products' && <AdminProducts />}
-            {adminSubTab === 'orders' && <AdminOrders />}
             {adminSubTab === 'users' && <AdminUsers />}
+            {adminSubTab === 'drivers' && <AdminDrivers />}
           </div>
         )}
+        {activeTab === 'chef-executive' && <ChefExecutiveDashboard />}
         {activeTab === 'kitchen' && <KitchenDashboard />}
+        {activeTab === 'packing' && <PackingDashboard />}
         {activeTab === 'delivery' && <DeliveryDashboard />}
         {activeTab === 'user' && <UserDashboard />}
       </div>

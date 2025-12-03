@@ -1,19 +1,4 @@
-/*
-  Admin service: mapea los endpoints que el frontend necesitará del backend.
 
-  Endpoints sugeridos (AWS Lambda / API Gateway):
-  - GET  /admin/dashboard                -> estadísticas (orders, revenue, active, customers, recentOrders)
-  - GET  /admin/products                 -> lista de productos (paginado)
-  - GET  /admin/products/:id             -> obtener producto
-  - POST /admin/products                 -> crear producto
-  - PUT  /admin/products/:id             -> actualizar producto
-  - DELETE /admin/products/:id          -> eliminar producto
-  - GET  /admin/orders                   -> listar órdenes (filtros: status, date)
-  - PUT  /admin/orders/:id               -> actualizar estado de orden (p.ej. preparar, listo, enviado)
-  - GET  /admin/users                    -> listar usuarios
-
-  Ajusta las rutas/headers conforme a tu infra (Authorizer, JWT, etc.).
-*/
 
 // Construye headers de autorización a partir del token guardado en localStorage
 function getAuthHeaders(): HeadersInit | undefined {
@@ -21,8 +6,8 @@ function getAuthHeaders(): HeadersInit | undefined {
   return token ? { Authorization: `Bearer ${token}` } : undefined;
 }
 
-// Prefer explicit base vars; fall back to older names if needed
-const API_BASE = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL_COMIDA || import.meta.env.VITE_API_URL || '';
+// Admin service uses dedicated admin API Gateway
+const API_BASE = import.meta.env.VITE_API_URL_ADMIN || '';
 
 async function handleResponse(res: Response) {
   if (!res.ok) {
@@ -32,18 +17,64 @@ async function handleResponse(res: Response) {
   return res.status === 204 ? null : res.json();
 }
 
+export type DashboardStats = {
+  totalOrders: number;
+  byStatus: Record<string, number>;
+  revenue: number;
+};
+
+export interface Driver {
+  driverId: string;
+  userId: string;
+  tenant_id: string;
+  name: string;
+  vehicleType: string;
+  isAvailable: boolean;
+  currentDeliveries: number;
+  createdAt: string;
+}
+
+export interface ListDriversResponse {
+  success: boolean;
+  message: string;
+  data: {
+    drivers: Driver[];
+    count: number;
+    tenant_id: string;
+  };
+}
+
 export async function fetchDashboard() {
   const res = await fetch(`${API_BASE}/admin/dashboard`, { headers: getAuthHeaders() });
   return handleResponse(res);
 }
 
-export async function listProducts(page = 1, perPage = 20) {
-  const res = await fetch(`${API_BASE}/admin/products?page=${page}&per_page=${perPage}`, { headers: getAuthHeaders() });
+export async function fetchTodayOrders() {
+  const res = await fetch(`${API_BASE}/admin/orders/today`, { headers: getAuthHeaders() });
   return handleResponse(res);
 }
 
+export async function listProducts(page = 1, perPage = 20) {
+  const res = await fetch(`${API_BASE}/admin/products?page=${page}&per_page=${perPage}`, { headers: getAuthHeaders() });
+  const json = await handleResponse(res);
+
+  // Expected shapes:
+  // { success, message, data: { products: [...], count, tenant_id } }
+  // or directly { products: [...], count }
+  const data = json && typeof json === 'object' ? (json.data ?? json) : json;
+
+  return {
+    products: data.products ?? data.items ?? [],
+    count: data.count ?? undefined,
+    tenant_id: data.tenant_id ?? data.tenantId ?? undefined,
+  };
+}
+
 export async function getProduct(id: string) {
-  const res = await fetch(`${API_BASE}/admin/products/${id}`, { headers: getAuthHeaders() });
+  // Encode # as %23 and other special characters in productId for URL safety
+  const encodedId = encodeURIComponent(id);
+  
+  const res = await fetch(`${API_BASE}/admin/products/${encodedId}`, { headers: getAuthHeaders() });
   return handleResponse(res);
 }
 
@@ -93,17 +124,52 @@ export async function createProduct(payload: CreateProductPayload): Promise<Crea
   return { product: json } as CreatedProductResult;
 }
 
-export async function updateProduct(id: string, payload: any) {
-  const res = await fetch(`${API_BASE}/admin/products/${id}`, {
+export type UpdateProductPayload = {
+  name?: string;
+  description?: string;
+  category?: string;
+  price?: number;
+  currency?: string;
+  preparationTimeMinutes?: number;
+  isAvailable?: boolean;
+  tags?: string[];
+  imageUrl?: string;
+};
+
+export type UpdatedProductResult = {
+  product: any;
+  message?: string;
+};
+
+export async function updateProduct(id: string, payload: UpdateProductPayload): Promise<UpdatedProductResult> {
+  // Encode # as %23 in productId for URL safety
+  const encodedId = id.replace(/#/g, '%23');
+  
+  const res = await fetch(`${API_BASE}/admin/products/${encodedId}`, {
     method: 'PUT',
     headers: { ...(getAuthHeaders() ?? {}), 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  return handleResponse(res);
+
+  const json = await handleResponse(res);
+
+  // Response shape: { success, message, data: { product: {...}, message: '...' } }
+  if (json && typeof json === 'object') {
+    const data = json.data ?? json;
+    return {
+      product: data.product ?? json,
+      message: data.message ?? json.message ?? undefined,
+    } as UpdatedProductResult;
+  }
+
+  return { product: json } as UpdatedProductResult;
 }
 
 export async function deleteProduct(id: string) {
-  const res = await fetch(`${API_BASE}/admin/products/${id}`, {
+  // Encode # as %23 and other special characters in productId for URL safety
+  const encodedId = encodeURIComponent(id);
+  
+  const res = await fetch(`${API_BASE}/admin/products/${encodedId}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
@@ -124,8 +190,67 @@ export async function updateOrderStatus(id: string, payload: any) {
   return handleResponse(res);
 }
 
+export type CreateUserPayload = {
+  email: string;
+  password: string;
+  name: string;
+  role: string;
+  address?: string;
+  phoneNumber?: string;
+  tenant_id?: string;
+};
+
+export type CreateUserResult = {
+  success: boolean;
+  message: string;
+  data: {
+    user: any;
+  };
+};
+
+export async function createUser(payload: CreateUserPayload): Promise<CreateUserResult> {
+  const res = await fetch(`${API_BASE}/admin/users`, {
+    method: 'POST',
+    headers: { ...(getAuthHeaders() ?? {}), 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
 export async function listUsers(page = 1, perPage = 50) {
   const res = await fetch(`${API_BASE}/admin/users?page=${page}&per_page=${perPage}`, { headers: getAuthHeaders() });
+  return handleResponse(res);
+}
+
+export async function getUser(userId: string) {
+  const res = await fetch(`${API_BASE}/admin/users/${userId}`, { headers: getAuthHeaders() });
+  return handleResponse(res);
+}
+
+export type UpdateUserPayload = {
+  firstName?: string;
+  lastName?: string;
+  password?: string;
+  phoneNumber?: string;
+  address?: string;
+  role?: string;
+  status?: string;
+};
+
+export async function updateUser(userId: string, payload: UpdateUserPayload) {
+  const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
+    method: 'PUT',
+    headers: { ...(getAuthHeaders() ?? {}), 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}
+
+export async function deleteUser(userId: string) {
+  const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
   return handleResponse(res);
 }
 
@@ -138,8 +263,21 @@ export async function updateUserRole(id: string, role: string) {
   return handleResponse(res);
 }
 
+/**
+ * GET /delivery/drivers
+ * Obtener lista de conductores de delivery
+ * Endpoint: https://y8b94sjrcc.execute-api.us-east-1.amazonaws.com/dev/delivery/drivers
+ */
+export async function listDrivers(): Promise<ListDriversResponse> {
+  const res = await fetch('https://y8b94sjrcc.execute-api.us-east-1.amazonaws.com/dev/delivery/drivers', {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(res);
+}
+
 export default {
   fetchDashboard,
+  fetchTodayOrders,
   listProducts,
   getProduct,
   createProduct,
@@ -147,5 +285,11 @@ export default {
   deleteProduct,
   listOrders,
   updateOrderStatus,
+  createUser,
   listUsers,
+  getUser,
+  updateUser,
+  deleteUser,
+  updateUserRole,
+  listDrivers,
 };
