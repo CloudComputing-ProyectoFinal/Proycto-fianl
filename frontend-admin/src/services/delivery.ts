@@ -1,8 +1,8 @@
 import { loadEnv } from '../utils/loaderEnv';
 
 const API_BASE = loadEnv('DELIVERY_URL');
-// Orders API usa el endpoint AUTH (rpepuemxp5)
-const ORDERS_API_BASE = import.meta.env.VITE_API_URL_AUTH?.replace('/auth', '') || '';
+// Orders API usa VITE_API_URL_ORDERS (rpepuemxp5)
+const ORDERS_API_BASE = import.meta.env.VITE_API_URL_ORDERS || '';
 console.log('[delivery.ts] API_BASE:', API_BASE);
 console.log('[delivery.ts] ORDERS_API_BASE:', ORDERS_API_BASE);
 
@@ -227,11 +227,12 @@ export const getCurrentOrder = async (): Promise<CurrentOrderResponse> => {
 };
 
 /**
- * GET /delivery/orders
- * Listar todas las órdenes de delivery
+ * GET /orders
+ * Listar todas las órdenes del sistema
+ * Usa ORDERS_API_BASE (rpepuemxp5.execute-api.us-east-1.amazonaws.com/dev/orders)
  */
 export const listDeliveryOrders = async (): Promise<{ success: boolean; data: { orders: DeliveryOrder[] } }> => {
-  const res = await fetch(`${API_BASE}/delivery/orders`, {
+  const res = await fetch(`${ORDERS_API_BASE}/orders`, {
     method: 'GET',
     headers: getAuthHeaders(),
   });

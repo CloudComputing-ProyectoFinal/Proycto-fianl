@@ -11,6 +11,7 @@ import { AdminStats } from '../components/admin/AdminStats';
 import { AdminProducts } from '../components/admin/AdminProducts';
 import { AdminUsers } from '../components/admin/AdminUsers';
 import { AdminDrivers } from '../components/admin/AdminDrivers';
+import { AllOrdersView } from '../components/sections/AllOrdersView';
 
 export function DashboardPage() {
   const { profile } = useAuth();
@@ -18,7 +19,7 @@ export function DashboardPage() {
   const { section } = useParams<{ section?: string }>();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('');
-  const [adminSubTab, setAdminSubTab] = useState<'stats' | 'products' | 'users' | 'drivers'>('stats');
+  const [adminSubTab, setAdminSubTab] = useState<'stats' | 'products' | 'users' | 'drivers' | 'orders'>('stats');
 
   // Detectar la pestaña activa según la URL
   useEffect(() => {
@@ -36,7 +37,7 @@ export function DashboardPage() {
       setActiveTab('admin');
       // Detectar sub-pestaña de admin desde el parámetro :section
       if (section) {
-        setAdminSubTab(section as 'stats' | 'products' | 'users' | 'drivers');
+        setAdminSubTab(section as 'stats' | 'products' | 'users' | 'drivers' | 'orders');
       }
     } else if (profile) {
       // Default según rol cuando está en /dashboard o /
@@ -164,6 +165,14 @@ export function DashboardPage() {
                   Estadísticas
                 </button>
                 <button 
+                  onClick={() => navigate('/dashboard/admin/orders')} 
+                  className={`px-4 py-2 rounded font-medium transition-all ${
+                    adminSubTab === 'orders' ? 'bg-red-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
+                  }`}
+                >
+                  📋 Todas las Órdenes
+                </button>
+                <button 
                   onClick={() => navigate('/dashboard/admin/products')} 
                   className={`px-4 py-2 rounded font-medium transition-all ${
                     adminSubTab === 'products' ? 'bg-red-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
@@ -191,6 +200,7 @@ export function DashboardPage() {
             </div>
 
             {adminSubTab === 'stats' && <AdminStats />}
+            {adminSubTab === 'orders' && <AllOrdersView />}
             {adminSubTab === 'products' && <AdminProducts />}
             {adminSubTab === 'users' && <AdminUsers />}
             {adminSubTab === 'drivers' && <AdminDrivers />}

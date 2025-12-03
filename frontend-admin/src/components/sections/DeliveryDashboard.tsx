@@ -7,6 +7,7 @@ import type { Driver, DeliveryOrder } from '../../services/delivery';
 export function DeliveryDashboard() {
   const { user, profile } = useAuth();
   const [currentOrder, setCurrentOrder] = useState<DeliveryOrder | null>(null);
+  const [deliveringOrders, setDeliveringOrders] = useState<DeliveryOrder[]>([]); // Para ADMIN
   const [availableDrivers, setAvailableDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingDrivers, setLoadingDrivers] = useState(false);
@@ -14,20 +15,47 @@ export function DeliveryDashboard() {
   const isAdmin = profile?.role === 'ADMIN';
 
   useEffect(() => {
-    console.log('[DeliveryDashboard] mount', { user, profile });
-    loadCurrentOrder();
-    loadAvailableDrivers();
+    console.log('[DeliveryDashboard] mount', { user, profile, isAdmin });
+    
+    if (isAdmin) {
+      loadDeliveringOrders();
+    } else {
+      loadCurrentOrder();
+      loadAvailableDrivers();
+    }
     
     // Auto-refresh cada 30 segundos
     const interval = setInterval(() => {
-      loadCurrentOrder();
+      if (isAdmin) {
+        loadDeliveringOrders();
+      } else {
+        loadCurrentOrder();
+      }
     }, 30000);
     
     return () => {
       clearInterval(interval);
       console.log('[DeliveryDashboard] unmount');
     };
-  }, [user]);
+  }, [user, isAdmin]);
+
+  const loadDeliveringOrders = async () => {
+    setLoading(true);
+    try {
+      console.log('🚨 [DeliveryDashboard ADMIN] Cargando todas las órdenes DELIVERING...');
+      const res = await deliveryService.listDeliveryOrders();
+      console.log('✅ [DeliveryDashboard ADMIN] listDeliveryOrders response:', res);
+      const allOrders = res?.data?.orders || [];
+      // Filtrar solo órdenes en estado DELIVERING
+      const delivering = allOrders.filter(o => o.status === 'DELIVERING');
+      console.log('📦 [DeliveryDashboard ADMIN] Órdenes DELIVERING:', delivering.length);
+      setDeliveringOrders(delivering);
+    } catch (err) {
+      console.error('❌ [DeliveryDashboard ADMIN] loadDeliveringOrders error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadCurrentOrder = async () => {
     setLoading(true);
@@ -113,7 +141,7 @@ export function DeliveryDashboard() {
     return texts[status] || status;
   };
 
-  if (loading && !currentOrder) {
+  if (loading && !currentOrder && deliveringOrders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-6">
         <div className="relative">
@@ -125,6 +153,147 @@ export function DeliveryDashboard() {
     );
   }
 
+  // Vista para ADMIN: Todas las órdenes DELIVERING
+  if (isAdmin) {
+    return (
+      <div className="space-y-6">
+        {/* Header ADMIN */}
+        <div className="bg-gradient-to-r from-red-600 to-red-800 rounded-2xl shadow-2xl p-8 text-white border-4 border-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMC41IiBvcGFjaXR5PSIwLjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-20"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <div className="bg-white p-3 rounded-xl">
+                  <Truck size={40} className="text-red-600" />
+                </div>
+                <div>
+                  <h2 className="text-4xl font-black tracking-tight uppercase">ÓRDENES EN CAMINO</h2>
+                  <p className="text-red-100 font-semibold">Vista Admin - Delivery</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 backdrop-blur-sm px-6 py-4 rounded-xl border-2 border-white/30">
+                  <div className="text-5xl font-black">{deliveringOrders.length}</div>
+                  <div className="text-sm font-semibold text-red-100">EN CAMINO</div>
+                </div>
+                <button
+                  onClick={loadDeliveringOrders}
+                  className="bg-white text-red-600 px-6 py-3 rounded-xl font-black hover:bg-red-50 transition-all shadow-xl hover:shadow-2xl transform hover:scale-105"
+                >
+                  🔄 ACTUALIZAR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Lista de Órdenes DELIVERING */}
+        <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200">
+          <h3 className="text-xl font-black text-gray-900 mb-4 uppercase flex items-center gap-2">
+            <Truck className="text-purple-600" />
+            Órdenes en Entrega ({deliveringOrders.length})
+          </h3>
+          
+          {deliveringOrders.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-xl">
+              <Truck className="w-16 h-16 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-500 font-semibold">No hay órdenes en camino</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {deliveringOrders.map((order) => (
+                <div
+                  key={order.orderId}
+                  className="bg-white border-4 border-purple-400 rounded-xl p-5 shadow-lg hover:shadow-xl transition-all"
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-black text-gray-900 text-base">
+                      #{order.orderId.replace('ORDER#', '').slice(0, 8)}
+                    </span>
+                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-bold uppercase border-2 border-purple-300 flex items-center gap-1">
+                      <Truck size={14} />
+                      EN CAMINO
+                    </span>
+                  </div>
+
+                  {/* Conductor */}
+                  {order.driver_name && (
+                    <div className="mb-3 pb-3 border-b border-gray-200 bg-indigo-50 rounded-lg p-2">
+                      <p className="text-xs text-gray-500">Conductor:</p>
+                      <p className="font-bold text-sm text-indigo-900">{order.driver_name}</p>
+                    </div>
+                  )}
+
+                  {/* Cliente */}
+                  {order.customerInfo && (
+                    <div className="mb-3 pb-3 border-b border-gray-200">
+                      <p className="text-xs text-gray-500">Cliente:</p>
+                      <p className="font-semibold text-sm text-gray-900">
+                        {order.customerInfo.firstName} {order.customerInfo.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <Phone size={10} />
+                        {order.customerInfo.phoneNumber}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Dirección */}
+                  {order.deliveryAddress && (
+                    <div className="mb-3 pb-3 border-b border-gray-200">
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <MapPin size={12} className="text-orange-600" />
+                        Dirección:
+                      </p>
+                      <p className="text-sm text-gray-700 font-medium">{order.deliveryAddress.street}</p>
+                      <p className="text-xs text-gray-500">{order.deliveryAddress.district}, {order.deliveryAddress.city}</p>
+                    </div>
+                  )}
+
+                  {/* Items */}
+                  <div className="mb-3 space-y-1">
+                    {order.items.slice(0, 2).map((item, idx) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-gray-700">{item.quantity}x {item.name}</span>
+                        <span className="font-semibold text-gray-900">{order.currency} {item.subtotal.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {order.items.length > 2 && (
+                      <p className="text-xs text-gray-500 italic">+{order.items.length - 2} items más</p>
+                    )}
+                  </div>
+
+                  {/* Total */}
+                  <div className="border-t-2 border-purple-200 pt-3 mb-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-gray-700">Total:</span>
+                      <span className="text-xl font-black text-purple-600">{order.currency} {order.total.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Fecha */}
+                  <p className="text-xs text-gray-500 flex items-center gap-1 mb-3">
+                    <Clock size={12} />
+                    {new Date(order.assigned_at || order.updatedAt).toLocaleString('es-PE')}
+                  </p>
+
+                  {/* Badge ADMIN */}
+                  <div className="bg-gray-50 border-2 border-gray-200 rounded-lg px-3 py-2">
+                    <p className="text-gray-600 text-xs font-bold text-center">
+                      👁️ SOLO VISUALIZACIÓN
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Vista para DISPATCHER: Orden actual del conductor
   return (
     <div className="space-y-6">
       {/* Header */}
